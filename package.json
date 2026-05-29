@@ -1,0 +1,14 @@
+{
+  "name": "pandas-comfort-corner",
+  "version": "1.0.0",
+  "description": "A wholesome safe space powered by Gemini and Hugging Face",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}

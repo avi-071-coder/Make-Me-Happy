@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panda's Comfort Corner 🐼</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="night-mode"> <!-- Force Dark Mode globally -->
+
+  <!-- Cute Loading Screen -->
+  <div id="loadingScreen" class="loading-screen">
+    <div class="sleeping-panda-container">
+      <img src="images/sleeping.png" class="sleeping-panda-img" alt="Sleeping Panda">
+      <div class="loader-bar">
+        <div class="loader-progress"></div>
+      </div>
+      <div class="loading-text">Waking up Barnaby...</div>
+    </div>
+  </div>
+
+  <!-- Floating Background Elements -->
+  <div id="particles-bg"></div>
+  <div id="particles-fg"></div>
+  <div class="clouds-container">
+    <div class="cloud cloud-1">☁️</div>
+    <div class="cloud cloud-2">☁️</div>
+    <div class="cloud cloud-3">☁️</div>
+  </div>
+
+  <!-- Header & Navigation -->
+  <header>
+    <div class="logo-area">
+      <img src="images/logo.png" class="logo-img" alt="Panda Logo">
+      <h1>Panda's Comfort Corner</h1>
+      <span class="logo-icon">🐼</span>
+    </div>
+    <div class="header-controls">
+      <button id="settingsBtn" class="icon-btn" title="API Settings">⚙️</button>
+    </div>
+  </header>
+
+  <!-- Key Warning Banner -->
+  <div id="keyWarning" class="warning-banner hidden">
+    <span>⚠️ API Keys not configured in backend. Running in fallback mode.</span>
+  </div>
+
+  <!-- Tab Navigation -->
+  <nav class="main-nav">
+    <button class="nav-tab active" data-tab="home">🏡 Home & Garden</button>
+    <button class="nav-tab" data-tab="release">🌬️ Breathe & Release</button>
+    <button class="nav-tab" data-tab="joy">💖 Reasons & Joy</button>
+  </nav>
+
+  <!-- Main Content Container -->
+  <main class="content-container">
+
+    <!-- TAB 1: HOME (COMPANION & GARDEN) -->
+    <section id="tab-home" class="tab-content active">
+      <!-- Welcome Section -->
+      <div class="welcome-box glass">
+        <h2 id="welcomeText">Hi Sunshine ☀️</h2>
+        <p id="welcomeSubtitle"><span class="p-name">Barnaby</span> missed you! No matter how today feels, you're not facing it alone.</p>
+      </div>
+
+      <!-- Main Companion Image -->
+      <div class="panda-companion-card glass">
+        <div class="panda-visual-wrapper">
+          <div id="heartContainer" class="heart-spawner"></div>
+          <img id="mainIdlePanda" class="panda-avatar-img" src="images/happy.png" alt="Happy Panda">
+        </div>
+        <div class="panda-dialogue glass">
+          <p id="pandaSpeech">Hello, <span class="u-name">Friend</span>! I am <span class="p-name">Barnaby</span>. I'm here to support you.</p>
+        </div>
+      </div>
+
+      <!-- How Are You Feeling Today? Mood Cards -->
+      <div class="mood-section-cards">
+        <h3>How are you feeling today?</h3>
+        <div class="mood-grid">
+          <button class="mood-card glass shadow-sad" data-mood="sad">
+            <span class="mood-emoji">😔</span>
+            <span class="mood-label">Sad</span>
+          </button>
+          <button class="mood-card glass shadow-stressed" data-mood="stressed">
+            <span class="mood-emoji">😣</span>
+            <span class="mood-label">Stressed</span>
+          </button>
+          <button class="mood-card glass shadow-sick" data-mood="sick">
+            <span class="mood-emoji">🤒</span>
+            <span class="mood-label">Sick</span>
+          </button>
+          <button class="mood-card glass shadow-angry" data-mood="angry">
+            <span class="mood-emoji">😠</span>
+            <span class="mood-label">Angry</span>
+          </button>
+          <button class="mood-card glass shadow-motivation" data-mood="motivation">
+            <span class="mood-emoji">🚀</span>
+            <span class="mood-label">Need Motivation</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Full-Screen Mood Response Overlay Section (Hidden Initially) -->
+      <div id="moodFullscreenOverlay" class="mood-fullscreen-overlay hidden">
+        <div id="moodOverlayEffects" class="overlay-effects-container"></div>
+        <button id="closeMoodOverlay" class="back-home-overlay-btn">✨ Back to Home</button>
+        
+        <div class="mood-response-wrapper">
+          <!-- Left Visual Block -->
+          <div class="mood-visual-block">
+            <img id="moodPandaImg" class="panda-avatar-img-large" src="images/happy.png" alt="Mood Panda">
+            <div id="moodResponseLoading" class="loading-spinner hidden">
+              <span class="spinner">🎨</span> Drawing custom panda...
+            </div>
+          </div>
+          <!-- Right Comfort Block -->
+          <div class="mood-comfort-block">
+            <h2 id="moodResponseGreeting">Oh, sweetheart...</h2>
+            <div class="comfort-scroller">
+              <h4>5 Comforting Messages:</h4>
+              <ul id="comfortMessagesList" class="comfort-list">
+                <!-- 10 messages populating -->
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tiny Wins & Comfort Garden -->
+      <div class="wins-garden-section glass">
+        <!-- Daily wins checklist -->
+        <div class="wins-area">
+          <div class="wins-header">
+            <h3>Today's Tiny Wins 🌟</h3>
+            <button id="resetWinsBtn" class="sec-btn">🔄 Reset Wins</button>
+          </div>
+          
+          <!-- Progress bar -->
+          <div class="wins-progress-container">
+            <div class="progress-bar-outline">
+              <div id="winsProgressBar" class="progress-bar-fill" style="width: 0%"></div>
+            </div>
+            <span id="winsProgressPercent">0%</span>
+          </div>
+
+          <p id="winsCountText">You've completed 0 tiny wins today! So proud of you!</p>
+          
+          <div id="winsChecklist" class="wins-checklist wins-grid-layout">
+            <!-- 22 items populated via script.js -->
+          </div>
+        </div>
+
+        <!-- Horizontal grass garden -->
+        <div class="garden-area">
+          <h3>The Comfort Garden 🌱</h3>
+          <p class="section-desc">A persistent visual representation of your self-care journey. Sprout a new plant every 5 wins!</p>
+          <div class="garden-container-wrapper">
+            <div class="grass-bed-container">
+              <div id="gardenBed" class="grass-bed">
+                <!-- side-by-side sprouts with zero white gaps -->
+                <div class="empty-garden-placeholder">Start completing wins to sprout flora!</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: BREATHE & RELEASE -->
+    <section id="tab-release" class="tab-content">
+      <div class="release-grid">
+        <!-- Let It Go Box -->
+        <div class="let-it-go-card glass">
+          <h3>The "Let It Go" Box 🌬️</h3>
+          <p>Type out whatever is stressing, saddening, or bothering you. We will validate it, then let it go together.</p>
+          
+          <div class="let-it-go-wrapper">
+            <!-- Floating Lantern Overlay -->
+            <div id="floatingLantern" class="lantern-overlay hidden">
+              <div class="lantern-body">🏮</div>
+              <div id="lanternText" class="lantern-text"></div>
+            </div>
+
+            <!-- Paper Shredder Graphics overlay -->
+            <div id="paperShredder" class="shredder-overlay hidden">
+              <div class="shredder-top">📟 Shredder</div>
+              <div class="shredder-slots"></div>
+              <div class="shredder-strips-container" id="shredderStrips">
+                <!-- Falling paper strips -->
+              </div>
+            </div>
+
+            <textarea id="letItGoText" placeholder="Write your thoughts here..."></textarea>
+          </div>
+
+          <div id="releaseValidationArea" class="validation-box hidden">
+            <p id="validationSentence"></p>
+          </div>
+
+          <div id="releaseLoading" class="loading-spinner hidden">
+            <span class="spinner">💭</span> Barnaby is listening closely...
+          </div>
+
+          <div class="button-row">
+            <button id="validateReleaseBtn" class="primary-btn">Share with Panda</button>
+            <button id="shredBtn" class="shred-btn hidden">🗑️ Shred It</button>
+            <button id="floatBtn" class="float-btn hidden">🎈 Float It</button>
+          </div>
+        </div>
+
+        <!-- Balloon Breathing Widget -->
+        <div class="breathing-card glass">
+          <h3>Balloon Breathing 🌬️</h3>
+          <p>Breathe along with the balloon (4-7-8 Method). Watch it gently expand and contract to calm your mind.</p>
+          
+          <div class="breathing-container">
+            <div class="breathing-instructions">
+              <span id="breathingState">Breathe In...</span>
+              <span id="breathingTimer">4s</span>
+            </div>
+            
+            <!-- Pastel Balloon is now the only breathing visual -->
+            <div id="pastelBalloon" class="pastel-balloon">🎈</div>
+
+            <div class="breathing-toggle-buttons">
+              <button id="startBreathingBtn" class="primary-btn">Start Breathing</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: REASONS & JOY -->
+    <section id="tab-joy" class="tab-content">
+      <!-- 10 Reasons You Are Amazing -->
+      <div class="reasons-section glass">
+        <div class="section-header">
+          <h3>10 Reasons You Are Amazing ✨</h3>
+          <button id="refreshReasonsBtn" class="primary-btn">✨ Refresh Reminders</button>
+        </div>
+        <p>Click on any card to flip it and reveal a reminder of your worth.</p>
+        <div id="reasonsLoading" class="loading-spinner hidden">
+          <span class="spinner">💖</span> Generating affirmations...
+        </div>
+        <div id="reasonsGrid" class="reasons-grid">
+          <!-- Flip cards generated dynamically -->
+        </div>
+      </div>
+
+      <!-- Emergency Happiness Button -->
+      <div class="emergency-section glass">
+        <h3>🚨 EMERGENCY HAPPINESS BUTTON 🚨</h3>
+        <p>Feeling down? Click the big button below for a sudden burst of cheer, a story, a joke, or a fun animation!</p>
+        
+        <div class="emergency-wrapper">
+          <button id="emergencyBtn" class="emergency-btn">✨ CLICK FOR HAPPINESS ✨</button>
+        </div>
+
+        <div id="emergencyLoading" class="loading-spinner hidden">
+          <span class="spinner">🎁</span> Packing a surprise for you...
+        </div>
+
+        <!-- Emergency Output Box -->
+        <div id="emergencyOutput" class="emergency-output glass hidden">
+          <div id="emergencyTextContent" class="emergency-text"></div>
+          <div id="emergencyImageContainer" class="emergency-image-container hidden">
+            <img id="emergencyImg" src="" alt="Emergency Happiness Surprise">
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Setup Modal (First-time visitor) -->
+  <div id="setupModal" class="modal-overlay hidden">
+    <div class="modal-content setup-modal glass">
+      <h3>🌸 Welcome to Comfort Corner 🌸</h3>
+      <p>Let's personalize your experience. Please share your names:</p>
+      
+      <div class="form-group">
+        <label for="userNameInput">What is your name?</label>
+        <input type="text" id="userNameInput" placeholder="Enter your name..." value="Sunshine">
+      </div>
+
+      <div class="form-group">
+        <label for="pandaSetupNameInput">What would you like to name your Panda companion?</label>
+        <input type="text" id="pandaSetupNameInput" placeholder="Barnaby, Bubbles..." value="Barnaby">
+      </div>
+
+      <button id="saveSetupBtn" class="primary-btn">Enter Comfort Corner ✨</button>
+    </div>
+  </div>
+
+  <!-- Congratulations Modal -->
+  <div id="congratsModal" class="modal-overlay hidden">
+    <div class="modal-content congrats-modal glass">
+      <button id="closeCongratsBtn" class="close-modal">&times;</button>
+      <h3>🎉 CONGRATULATIONS! 🎉</h3>
+      <p class="congrats-sub">You checked off all 22 Tiny Wins today!</p>
+      
+      <div class="congrats-visual">
+        <img src="images/congrats.png" class="panda-avatar-img-large" alt="Congrats Panda">
+      </div>
+
+      <div id="congratsCustomMessage" class="congrats-message-box">
+        <div id="congratsLoading" class="loading-spinner">
+          <span class="spinner">✨</span> Writing a special note from Barnaby...
+        </div>
+      </div>
+      
+      <button id="congratsCloseBtn" class="primary-btn">Thank you, Barnaby ❤️</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal (Edit Names) -->
+  <div id="settingsModal" class="modal-overlay hidden">
+    <div class="modal-content glass">
+      <button id="closeSettingsBtn" class="close-modal">&times;</button>
+      <h3>⚙️ Edit Settings</h3>
+      <p>Personalize your experience. Update your name and your companion panda's name below.</p>
+      
+      <div class="form-group">
+        <label for="settingsUserNameInput">Your Name:</label>
+        <input type="text" id="settingsUserNameInput" placeholder="Enter your name...">
+      </div>
+
+      <div class="form-group">
+        <label for="settingsPandaNameInput">Panda Companion's Name:</label>
+        <input type="text" id="settingsPandaNameInput" placeholder="Enter companion name...">
+      </div>
+
+      <div class="button-row">
+        <button id="saveSettingsBtn" class="primary-btn">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- External JS File -->
+  <script src="script.js"></script>
+</body>
+</html>
