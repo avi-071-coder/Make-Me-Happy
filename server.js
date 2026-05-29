@@ -212,3 +212,5 @@ Generate a JSON object with:
 app.listen(PORT, () => {
   console.log(`Panda backend running on http://localhost:${PORT}`);
 });
+
+module.exports = app;
