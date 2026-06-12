@@ -1,1371 +1,1135 @@
-// --- State Management ---
-let appState = {
-  userName: localStorage.getItem('panda_user_name') || '',
-  pandaName: localStorage.getItem('panda_companion_name') || '',
-  soundEnabled: localStorage.getItem('panda_sound_enabled') !== 'false', // default to true for synthesized SFX
-  completedWins: JSON.parse(localStorage.getItem('panda_completed_wins') || '[]'),
-  winsDate: localStorage.getItem('panda_wins_date') || '',
-  garden: JSON.parse(localStorage.getItem('panda_garden_list') || '[]'),
-  reasons: JSON.parse(localStorage.getItem('panda_reasons_cache') || '[]'),
-  reasonsDate: localStorage.getItem('panda_reasons_date') || ''
-};
+// --- Comfort Corner | Full Feature Logic ---
 
-// Local storage API keys (if user sets them)
-let keys = {
-  gemini: localStorage.getItem('panda_gemini_key') || '',
-  hf: localStorage.getItem('panda_hf_key') || ''
-};
+let userToken = localStorage.getItem('panda_token');
+let userState = null;
 
-// Backend environment keys availability check
-let backendKeys = {
-  gemini: false,
-  hf: false
-};
-
-// --- Emojis and Efx Data ---
-const gardenPlants = ['🌻', '🌷', '🍄', '🌱', '🌿', '🪴', '🌸', '🌼', '🌲', '🌳', '🌺'];
-
-// 22 Specific Checklist items
-const masterWins = [
-  "Got out of bed",
-  "Drank a glass of water",
-  "Took my medicine / vitamins",
-  "Ate a comforting meal or snack",
-  "Washed my face or brushed my teeth",
-  "Changed into fresh, cozy clothes",
-  "Took a deep breath",
-  "Unclenched my jaw & dropped my shoulders",
-  "Opened a window for fresh air",
-  "Listened to a favorite song",
-  "Smiled at least once today",
-  "Forgave myself for something",
-  "Stepped outside for a moment",
-  "Decluttered my immediate workspace",
-  "Saved my progress and stepped away from the screen",
-  "Stretched my wrists, neck, and back",
-  "Rested my eyes from the blue light for a few minutes",
-  "Closed unnecessary browser tabs to declutter my mind",
-  "Put my phone on 'Do Not Disturb' for 15 minutes",
-  "Made my bed (even just pulling the covers up)",
-  "Celebrated a small learning moment or troubleshooting win",
-  "Rested without feeling guilty"
-];
-
-// 75 Affirmations Master Array
-const masterReasons = [
-  "You keep going even when things are difficult.",
-  "You make people smile.",
-  "You care deeply about others.",
-  "You're stronger than you realize.",
-  "You have survived every difficult day so far.",
-  "You bring kindness into the world.",
-  "You have the patience to figure out incredibly complex problems.",
-  "The things you build and create bring real value to the world.",
-  "You don't give up when things are broken; you find a way to fix them.",
-  "You are uniquely you.",
-  "You make life brighter for others.",
-  "You deserve happiness and rest.",
-  "You matter more than you know.",
-  "Your mind is beautifully creative.",
-  "You are capable of learning and mastering hard things.",
-  "You are allowed to take up space.",
-  "Your best is always enough.",
-  "You are allowed to rest without feeling guilty.",
-  "You bring a unique perspective that no one else has.",
-  "You are growing and evolving every single day.",
-  "It is okay if all you did today was survive.",
-  "You have a beautiful heart.",
-  "You are worthy of the same compassion you give to others.",
-  "Your feelings are completely valid.",
-  "You are making progress, even if it feels slow.",
-  "You are a safe space for the people who love you.",
-  "Your presence makes a difference.",
-  "You are so much more than your productivity.",
-  "You have overcome obstacles that nobody else knows about.",
-  "You are allowed to ask for help.",
-  "You are doing a great job figuring out this messy thing called life.",
-  "You are allowed to change your mind.",
-  "Your capacity to logic through tough situations is admirable.",
-  "You are an intricate, wonderful human being.",
-  "You have a knack for turning complex ideas into reality.",
-  "You bring a calming energy to chaotic situations.",
-  "You are inherently valuable, just by existing.",
-  "You are allowed to set boundaries to protect your peace.",
-  "Your dreams and goals are worth pursuing.",
-  "You are strong enough to start over as many times as you need.",
-  "You light up the room just by being in it.",
-  "You are allowed to be a work in progress.",
-  "You have a wonderful sense of humor.",
-  "You are resilient, even when you feel fragile.",
-  "You are capable of creating robust, beautiful solutions.",
-  "You are a good friend.",
-  "You are allowed to prioritize yourself.",
-  "You have a kind and gentle soul.",
-  "You are so brave for facing each new day.",
-  "You are more resilient than any bug or error life throws at you.",
-  "You are allowed to celebrate your tiny victories.",
-  "You are enough, exactly as you are.",
-  "You have a brilliant mind that is constantly expanding.",
-  "You are a beacon of hope for someone else.",
-  "You are allowed to log off and recharge.",
-  "You are making the world better just by being in it.",
-  "You are capable of navigating the unknown.",
-  "You are allowed to feel proud of yourself.",
-  "You are a masterpiece and a work in progress simultaneously.",
-  "You are loved more than you can comprehend.",
-  "You have the power to create your own joy.",
-  "You are allowed to take things one step at a time.",
-  "You have an incredible ability to adapt and overcome.",
-  "You are deserving of endless gentle moments.",
-  "You are not defined by your mistakes.",
-  "You are a wonderful listener.",
-  "You are capable of debugging your own thoughts and finding peace.",
-  "You are allowed to take the scenic route in life.",
-  "You are a gift to those who know you.",
-  "You are allowed to be softly, gently happy.",
-  "You are building a beautiful future for yourself.",
-  "You are seen, heard, and appreciated.",
-  "You are doing better than you think you are.",
-  "You are entirely whole, even if you feel broken.",
-  "You are the sunshine in someone's day."
-];
-
-// 75 Emergency Surprises Master Array
-const masterEmergencyActions = [
-  "Panda does a joyful backflip.",
-  "A gentle rain of pastel hearts falls down the screen.",
-  'Joke: "What do you call a bear with no teeth? A gummy bear! 🐻"',
-  "Panda hands you a virtual cup of hot cocoa with marshmallows.",
-  "A burst of rainbow confetti fills the screen.",
-  'Motivational quote: "You are doing great, sweetie."',
-  "Panda tries to hula hoop and adorably fails.",
-  "A flock of glowing blue butterflies flies across the screen.",
-  'Joke: "Why did the scarecrow win an award? Because he was outstanding in his field! 🌾"',
-  "Panda puts on tiny sunglasses and strikes a cool pose.",
-  "A soothing lo-fi chime plays with a sparkle animation.",
-  'Panda holds up a sign that says "I believe in you!"',
-  "Cute meme card pops up: A kitten wrapped in a purrito.",
-  'Joke: "Why do programmers prefer dark mode? Because light attracts bugs! 🐛"',
-  "Panda blows a giant bubblegum bubble that pops and covers its nose.",
-  "A screen-shaking virtual hug from the Panda.",
-  'Motivational quote: "Take a deep breath. You\'ve got this."',
-  "Panda does a little happy tap dance.",
-  "A wave of shooting stars crosses the background.",
-  'Joke: "What do you call fake noodle? An impasta! 🍝"',
-  "Panda pulls out a guitar and strums a happy chord.",
-  "Cute meme card: A dog wearing a tiny hat.",
-  'A shower of golden stars accompanied by a soft "DING!" sound.',
-  "Panda playfully chases its own tail.",
-  'Motivational quote: "Everything will be okay in the end. If it\'s not okay, it\'s not the end."',
-  "Panda gets a sudden idea and a glowing lightbulb appears over its head.",
-  'Joke: "Why did the math book look sad? Because of all of its problems! 📖"',
-  "Panda rolls across the screen like a fluffy bowling ball.",
-  "A soft, glowing aurora borealis appears at the top of the page.",
-  "Cute meme card: A capybara relaxing in a hot spring.",
-  "Panda pulls out a magnifying glass, inspects the screen, and smiles at you.",
-  'Motivational quote: "One day at a time. One step at a time."',
-  "Panda juggles three shiny apples.",
-  "A cascade of pastel-colored bubbles floats upward.",
-  'Joke: "What do you call a sleeping dinosaur? A dino-snore! 🦖"',
-  "Panda builds a tiny, perfect block tower.",
-  "Cute meme card: A hedgehog getting a belly rub.",
-  "Panda magically pulls a bouquet of flowers out of nowhere and offers it to you.",
-  'Motivational quote: "You are a sky full of stars."',
-  "Panda does a dramatic, superhero landing.",
-  "A gentle breeze sound plays while the on-screen clouds move faster.",
-  'Joke: "How does a penguin build its house? Igloos it together! 🐧"',
-  "Panda sneezes, and a cloud of sparkles comes out.",
-  "Cute meme card: Two otters holding hands.",
-  "Panda takes a big, exaggerated, relaxing stretch.",
-  'Motivational quote: "Breathe in peace, exhale stress."',
-  "Panda puts on a chef's hat and flips a virtual pancake perfectly.",
-  "A trail of glowing fireflies follows the user's cursor for 10 seconds.",
-  'Joke: "What did the ocean say to the shore? Nothing, it just waved! 🌊"',
-  "Panda magically resolves a complex maze on a tiny whiteboard.",
-  "Cute meme card: A red panda getting surprised.",
-  "Panda paints a beautiful, messy rainbow on a canvas.",
-  'Motivational quote: "Your potential is endless."',
-  "Panda wraps itself in a burrito blanket and rolls away.",
-  "A gentle wave of warmth (visual screen tint change to soft yellow) pulses once.",
-  'Joke: "Why don\'t skeletons fight each other? They don\'t have the guts! 💀"',
-  "Panda boops the screen (putting its nose right up to the camera lens).",
-  "Cute meme card: A frog sitting perfectly on a lily pad.",
-  "Panda does a flawless pirouette.",
-  'Motivational quote: "You matter more than you know."',
-  "Panda winks and gives a big, enthusiastic thumbs up.",
-  "Panda types furiously on a tiny laptop, then hits 'enter' and confetti explodes.",
-  "A shower of tiny bamboo leaves gently falls across the page.",
-  'Joke: "What do you call cheese that isn\'t yours? Nacho cheese! 🧀"',
-  "Panda tries to catch a butterfly and it lands perfectly on its nose.",
-  "Cute meme card: A baby elephant taking a bath in a tub.",
-  'Motivational quote: "Small steps are still progress."',
-  "Panda pulls a comically large, plush heart out of its pocket.",
-  "A soothing ripple effect goes across the entire webpage like a calm pond.",
-  'Joke: "Why couldn\'t the bicycle stand up by itself? It was two tired! 🚲"',
-  "Panda reads a tiny book, nods approvingly, and closes it.",
-  "Cute meme card: A very round, fluffy bird sitting on a snowy branch.",
-  "Panda meditates, and little 'Zzz' clouds float up gently.",
-  'Motivational quote: "It’s okay to pause and reset."',
-  "Panda joyfully jumps into a pile of autumn leaves."
-];
-
-// Local 10 comforting messages mapping per mood (Fallback)
-const localMoodComforts = {
-  sad: [
-    "It is completely okay to feel sad. Your feelings are valuable.",
-    "Give yourself permission to cry or rest today. You don't have to be strong.",
-    "I am sending you the warmest panda hug right now.",
-    "Even when everything feels dark, this rain will eventually pass.",
-    "You are not a burden. Your feelings matter.",
-    "Let's take things one very tiny step at a time.",
-    "I am sitting right beside you. You are safe here.",
-    "Allow yourself to feel whatever comes. No judgment.",
-    "You survived today. That is already a huge victory.",
-    "I believe in your strength, even when you cannot see it."
-  ],
-  stressed: [
-    "Take a slow breath. Drop your shoulders and relax your jaw.",
-    "You don't have to finish everything today. Rest is productive.",
-    "Focus on this single present moment. Just one thing at a time.",
-    "It is okay to close your tabs and step away from the screen.",
-    "You are doing the best you can, and that is more than enough.",
-    "Let's breathe together: in for 4, hold for 7, out for 8.",
-    "You are capable, but you are also allowed to rest.",
-    "The noise of the world can wait. Protect your peace.",
-    "Drink a warm cup of water and sit quietly for a minute.",
-    "One day at a time, friend. We will figure it out together."
-  ],
-  sick: [
-    "I've wrapped you in a cozy, soft blanket. Wrap yourself up too.",
-    "Rest is your body's way of healing. Don't rush it.",
-    "Warm soup and soft tea are waiting for you.",
-    "You don't need to be productive today. Just focus on feeling better.",
-    "Sip some water. Keep warm and comfortable.",
-    "It is okay if all you did today was rest and heal.",
-    "I am watching over you while you sleep.",
-    "Your health is the most important thing. Let everything else go.",
-    "Sleep as much as you need. There is no rush.",
-    "Sending healing thoughts and gentle warmth your way."
-  ],
-  angry: [
-    "It is okay to feel angry. Anger is just a sign that you care.",
-    "Punch a soft pillow or scream into it if you need to release it.",
-    "Take a step away from whatever is frustrating you.",
-    "Let's blow off some steam together. Take a long, slow exhale.",
-    "Your anger is valid, but let's release it safely so it doesn't hurt you.",
-    "It is okay to set boundaries and protect your space.",
-    "Breathe out the heat, breathe in cool, calming air.",
-    "You don't have to fix this situation right this second.",
-    "Let's write down the anger, then shred it to pieces.",
-    "I am here to listen. I won't judge your frustration."
-  ],
-  motivation: [
-    "You are capable of doing amazing things!",
-    "Look at how far you've come already. I am so proud of you.",
-    "Every small step gets you closer to your goal.",
-    "You are a star. Go shine at your own pace.",
-    "You have the power to solve this. I believe in you!",
-    "Celebrate this moment. You are growing every day.",
-    "Your potential is endless. Trust your beautiful mind.",
-    "Hard work is tough, but you are tougher.",
-    "Go get them! But remember to rest when you are done.",
-    "You've got this, Sunshine! I am cheering for you!"
-  ]
-};
-
-// --- Initialization ---
-document.addEventListener('DOMContentLoaded', async () => {
-  // Wake up sleeping panda loading screen
-  setTimeout(() => {
-    const loader = document.getElementById('loadingScreen');
-    if (loader) {
-      loader.style.opacity = '0';
-      setTimeout(() => loader.classList.add('hidden'), 500);
+document.addEventListener('DOMContentLoaded', () => {
+    initShader();
+    initGlobalFireflies();
+    
+    // Auto login if token exists
+    if (userToken) {
+        // Skip entrance animation if already logged in? 
+        // For now, let the user click "Enter" anyway, but we will auto-auth.
     }
-  }, 2200);
-
-  initSetup();
-  initAudio();
-  initSettings();
-  initTabs();
-  initIdlePanda();
-  initMoodOverlay();
-  initWinsAndGarden();
-  initRelease();
-  initBreathing();
-  initReasons();
-  initEmergency();
-  initParticles();
-
-  // Validate environment key presence silently
-  await checkBackendKeys();
 });
 
-// --- Check Backend Keys Presence ---
-async function checkBackendKeys() {
-  try {
-    const res = await fetch('/api/check-keys');
-    if (res.ok) {
-      backendKeys = await res.json();
-    }
-  } catch (e) {
-    console.log("Could not fetch backend keys availability.");
-  }
-  updateKeyWarningBanner();
-}
-
-function updateKeyWarningBanner() {
-  const warningBanner = document.getElementById('keyWarning');
-  const hasGemini = keys.gemini || backendKeys.gemini;
-  if (!hasGemini) {
-    warningBanner.classList.remove('hidden');
-  } else {
-    warningBanner.classList.add('hidden');
-  }
-}
-
-// --- First-time Setup Modal ---
-function initSetup() {
-  const modal = document.getElementById('setupModal');
-  const saveBtn = document.getElementById('saveSetupBtn');
-  const userIn = document.getElementById('userNameInput');
-  const pandaIn = document.getElementById('pandaSetupNameInput');
-
-  // Check if we need setup
-  if (!appState.userName || !appState.pandaName) {
-    modal.classList.remove('hidden');
-  } else {
-    updateNamesOnUI();
-  }
-
-  saveBtn.addEventListener('click', () => {
-    const userVal = userIn.value.trim() || 'Sunshine';
-    const pandaVal = pandaIn.value.trim() || 'Barnaby';
+// === SPA ROUTING ===
+function navTo(districtId) {
+    const districts = ['entrance-district', 'hub-district', 'adventure-district', 'memory-district'];
     
-    appState.userName = userVal;
-    appState.pandaName = pandaVal;
-    
-    localStorage.setItem('panda_user_name', userVal);
-    localStorage.setItem('panda_companion_name', pandaVal);
-    
-    updateNamesOnUI();
-    modal.classList.add('hidden');
-    showToast(`Welcome to your safe space, ${userVal}! ✨`);
-    
-    // Play warm synth sound
-    playMelodySound();
-  });
-}
-
-function updateNamesOnUI() {
-  document.querySelectorAll('.u-name').forEach(el => el.innerText = appState.userName);
-  document.querySelectorAll('.p-name').forEach(el => el.innerText = appState.pandaName);
-  
-  // Welcome Text
-  const welcome = document.getElementById('welcomeText');
-  if (welcome) {
-    welcome.innerText = `Hi ${appState.userName} ☀️`;
-  }
-}
-
-// --- Audio Context Synthesis ---
-let audioCtx = null;
-function initAudio() {
-  // Enable audio context on first click
-  document.body.addEventListener('click', () => {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-  }, { once: true });
-}
-
-// Synthesize Sparkle/Chime sound
-function playSparkleSound() {
-  if (!appState.soundEnabled || !audioCtx) return;
-  
-  const now = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(880, now); // A5
-  osc.frequency.exponentialRampToValueAtTime(1760, now + 0.4); // A6
-  
-  gain.gain.setValueAtTime(0.12, now);
-  gain.gain.linearRampToValueAtTime(0.005, now + 0.5);
-  
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  
-  osc.start(now);
-  osc.stop(now + 0.5);
-}
-
-// Synthesize Shredder/Crinkle Sound
-function playShredderSound() {
-  if (!appState.soundEnabled || !audioCtx) return;
-
-  const now = audioCtx.currentTime;
-  const duration = 1.2;
-  const bufferSize = audioCtx.sampleRate * duration;
-  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-  
-  // Create crackling white noise
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = Math.random() * 2 - 1;
-  }
-
-  const noiseNode = audioCtx.createBufferSource();
-  noiseNode.buffer = buffer;
-
-  const filter = audioCtx.createBiquadFilter();
-  filter.type = 'bandpass';
-  filter.frequency.setValueAtTime(1000, now);
-  filter.frequency.linearRampToValueAtTime(180, now + duration);
-
-  const gain = audioCtx.createGain();
-  gain.gain.setValueAtTime(0.06, now);
-  gain.gain.linearRampToValueAtTime(0.001, now + duration);
-
-  noiseNode.connect(filter);
-  filter.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  noiseNode.start(now);
-  noiseNode.stop(now + duration);
-}
-
-// Synthesize a comforting chime melody
-function playMelodySound() {
-  if (!appState.soundEnabled || !audioCtx) return;
-  const now = audioCtx.currentTime;
-  const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-  notes.forEach((freq, idx) => {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(freq, now + idx * 0.15);
-    gain.gain.setValueAtTime(0.08, now + idx * 0.15);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.15 + 0.4);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start(now + idx * 0.15);
-    osc.stop(now + idx * 0.15 + 0.4);
-  });
-}
-
-// --- Settings Panel ---
-function initSettings() {
-  const modal = document.getElementById('settingsModal');
-  const openBtn = document.getElementById('settingsBtn');
-  const closeBtn = document.getElementById('closeSettingsBtn');
-  const saveBtn = document.getElementById('saveSettingsBtn');
-
-  const userIn = document.getElementById('settingsUserNameInput');
-  const pandaIn = document.getElementById('settingsPandaNameInput');
-
-  openBtn.addEventListener('click', () => {
-    userIn.value = appState.userName;
-    pandaIn.value = appState.pandaName;
-    modal.classList.remove('hidden');
-  });
-
-  closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
-
-  saveBtn.addEventListener('click', () => {
-    const userVal = userIn.value.trim() || 'Sunshine';
-    const pandaVal = pandaIn.value.trim() || 'Barnaby';
-    
-    appState.userName = userVal;
-    appState.pandaName = pandaVal;
-    
-    localStorage.setItem('panda_user_name', userVal);
-    localStorage.setItem('panda_companion_name', pandaVal);
-    
-    updateNamesOnUI();
-    modal.classList.add('hidden');
-    showToast("Names updated! ✨");
-    playSparkleSound();
-  });
-}
-
-function getAPIHeaders() {
-  const headers = { 'Content-Type': 'application/json' };
-  if (keys.gemini) headers['X-Gemini-Key'] = keys.gemini;
-  if (keys.hf) headers['X-HF-Key'] = keys.hf;
-  return headers;
-}
-
-// --- Tab Navigation ---
-function initTabs() {
-  const tabs = document.querySelectorAll('.nav-tab');
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      
-      const target = tab.getAttribute('data-tab');
-      document.querySelectorAll('.tab-content').forEach(cont => {
-        cont.classList.remove('active');
-      });
-      document.getElementById(`tab-${target}`).classList.add('active');
-      playSparkleSound();
+    districts.forEach(d => {
+        const el = document.getElementById(d);
+        if (el) el.classList.add('hidden-section');
     });
-  });
-}
+    
+    const target = document.getElementById(districtId);
+    if (target) {
+        target.classList.remove('hidden-section');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
-// --- Idle Waving Hearts ---
-function initIdlePanda() {
-  const spawner = document.getElementById('heartContainer');
-  // Floating hearts around panda
-  setInterval(() => {
-    if (document.hidden) return;
-    spawnHeart(spawner);
-  }, 4000);
-}
-
-function spawnHeart(parent) {
-  if (!parent) return;
-  const heart = document.createElement('div');
-  heart.className = 'floating-heart';
-  heart.innerText = ['💖', '💕', '🌸', '✨'][Math.floor(Math.random() * 4)];
-  
-  const offset = Math.random() * 120 - 60;
-  heart.style.left = `calc(50% + ${offset}px)`;
-  heart.style.bottom = '40px';
-  parent.appendChild(heart);
-
-  setTimeout(() => heart.remove(), 2500);
-}
-
-// --- Mood Overlay Page & Cards ---
-function initMoodOverlay() {
-  const overlay = document.getElementById('moodFullscreenOverlay');
-  const closeBtn = document.getElementById('closeMoodOverlay');
-  const cards = document.querySelectorAll('.mood-card');
-  const effectContainer = document.getElementById('moodOverlayEffects');
-
-  cards.forEach(card => {
-    card.addEventListener('click', async () => {
-      const mood = card.getAttribute('data-mood');
-      await openMoodFullscreen(mood);
-    });
-  });
-
-  closeBtn.addEventListener('click', () => {
-    overlay.classList.add('hidden');
-    effectContainer.innerHTML = '';
-    playMelodySound();
-  });
-}
-
-async function openMoodFullscreen(mood) {
-  const overlay = document.getElementById('moodFullscreenOverlay');
-  const moodImg = document.getElementById('moodPandaImg');
-  const loader = document.getElementById('moodResponseLoading');
-  const greetingEl = document.getElementById('moodResponseGreeting');
-  const messagesList = document.getElementById('comfortMessagesList');
-  const effectContainer = document.getElementById('moodOverlayEffects');
-
-  // Reset visual layout
-  overlay.className = `mood-fullscreen-overlay overlay-${mood}`;
-  
-  // Use the cropped panda image matching this specific mood
-  moodImg.src = `images/${mood}.png`;
-  
-  messagesList.innerHTML = '';
-  effectContainer.innerHTML = '';
-
-  // Trigger sound
-  playMelodySound();
-
-  // Create cute background visual effects
-  triggerOverlayEffects(mood, effectContainer);
-
-  loader.classList.remove('hidden');
-  greetingEl.innerText = `Connecting with ${appState.pandaName}...`;
-
-  const hasGemini = keys.gemini || backendKeys.gemini;
-
-  try {
-    let comfortData;
-    if (hasGemini) {
-      const response = await fetch('/api/mood-comfort', {
-        method: 'POST',
-        headers: getAPIHeaders(),
-        body: JSON.stringify({
-          userName: appState.userName,
-          pandaName: appState.pandaName,
-          mood: mood
-        })
-      });
-      if (!response.ok) throw new Error("Mood API failed");
-      comfortData = await response.json();
+    const header = document.getElementById('global-header');
+    const bottomNav = document.getElementById('global-bottom-nav');
+    
+    if (districtId === 'entrance-district') {
+        if (header) header.classList.add('hidden');
+        if (bottomNav) bottomNav.classList.add('hidden');
     } else {
-      // Local Fallback
-      await new Promise(r => setTimeout(r, 1200));
-      const fallbackMsgs = [...(localMoodComforts[mood] || localMoodComforts.sad)].sort(() => 0.5 - Math.random()).slice(0, 5);
-      comfortData = {
-        greeting: `Hey ${appState.userName}, ${appState.pandaName} is here to keep you company.`,
-        comfortMessages: fallbackMsgs,
-        imageUrl: null
-      };
+        if (header) header.classList.remove('hidden');
+        if (bottomNav) bottomNav.classList.remove('hidden');
     }
-
-    greetingEl.innerText = comfortData.greeting;
-    comfortData.comfortMessages.forEach(msg => {
-      const li = document.createElement('li');
-      li.innerText = msg;
-      messagesList.appendChild(li);
-    });
-
-    // If HF generates a custom image, overlay it dynamically
-    if (comfortData.imageUrl) {
-      moodImg.src = comfortData.imageUrl;
-    }
-  } catch (err) {
-    console.error(err);
-    showToast("Gemini offline. Using gentle fallback...");
-    greetingEl.innerText = `Everything is okay, ${appState.userName}. I'm right here.`;
-    const messages = [...(localMoodComforts[mood] || localMoodComforts.sad)].sort(() => 0.5 - Math.random()).slice(0, 5);
-    messages.forEach(msg => {
-      const li = document.createElement('li');
-      li.innerText = msg;
-      messagesList.appendChild(li);
-    });
-  } finally {
-    loader.classList.add('hidden');
-  }
-
-  overlay.classList.remove('hidden');
 }
 
-function triggerOverlayEffects(mood, container) {
-  if (mood === 'sad') {
-    // Generate soft falling raindrops
-    for (let i = 0; i < 30; i++) {
-      const drop = document.createElement('div');
-      drop.className = 'rain-drop';
-      drop.style.left = `${Math.random() * 100}vw`;
-      drop.style.top = `-${Math.random() * 50}px`;
-      drop.style.animationDuration = `${Math.random() * 1.5 + 1}s`;
-      drop.style.animationDelay = `${Math.random() * 2}s`;
-      container.appendChild(drop);
-    }
-  } else if (mood === 'stressed') {
-    // Calming drifting clouds
-    for (let i = 0; i < 5; i++) {
-      const cloud = document.createElement('div');
-      cloud.className = 'cloud';
-      cloud.innerText = '☁️';
-      cloud.style.top = `${Math.random() * 80}vh`;
-      cloud.style.left = `${Math.random() * 100}vw`;
-      cloud.style.opacity = '0.2';
-      cloud.style.transform = `scale(${Math.random() * 1.5 + 0.8})`;
-      container.appendChild(cloud);
-    }
-  } else if (mood === 'angry') {
-    // Floating steam puffs
-    for (let i = 0; i < 15; i++) {
-      const steam = document.createElement('div');
-      steam.className = 'steam-puff';
-      steam.innerText = '💨';
-      steam.style.left = `${Math.random() * 100}vw`;
-      steam.style.animationDelay = `${Math.random() * 3}s`;
-      container.appendChild(steam);
-    }
-  } else if (mood === 'motivation' || mood === 'stressed') {
-    // Floating stars & sparkles
-    for (let i = 0; i < 25; i++) {
-      const star = document.createElement('div');
-      star.className = 'particle';
-      star.innerText = mood === 'motivation' ? '⭐' : '✨';
-      star.style.left = `${Math.random() * 100}vw`;
-      star.style.animationDuration = `${Math.random() * 5 + 5}s`;
-      star.style.fontSize = `${Math.random() * 1.2 + 0.8}rem`;
-      container.appendChild(star);
-    }
-  }
-}
+let currentAuthMode = 'login';
 
-// --- Tiny Wins & Horizontal Comfort Garden ---
-function initWinsAndGarden() {
-  const resetBtn = document.getElementById('resetWinsBtn');
+function switchAuthTab(mode) {
+    currentAuthMode = mode;
+    const tabLogin = document.getElementById('tab-login');
+    const tabSignup = document.getElementById('tab-signup');
+    const formLogin = document.getElementById('form-login');
+    const formSignup = document.getElementById('form-signup');
 
-  // Verify date to refresh checklist daily
-  const todayStr = new Date().toDateString();
-  if (appState.winsDate !== todayStr) {
-    appState.winsDate = todayStr;
-    appState.completedWins = [];
-    appState.garden = [];
-    localStorage.setItem('panda_wins_date', todayStr);
-    localStorage.setItem('panda_completed_wins', JSON.stringify([]));
-    localStorage.setItem('panda_garden_list', JSON.stringify([]));
-  }
-
-  resetBtn.addEventListener('click', () => {
-    appState.completedWins = [];
-    appState.garden = [];
-    localStorage.setItem('panda_completed_wins', JSON.stringify([]));
-    localStorage.setItem('panda_garden_list', JSON.stringify([]));
-    
-    renderWinsChecklist();
-    updateWinsProgress();
-    renderGardenGrass();
-    showToast("Checklist & garden refreshed! Let's start fresh.");
-    playSparkleSound();
-  });
-
-  renderWinsChecklist();
-  updateWinsProgress();
-  renderGardenGrass();
-}
-
-function renderWinsChecklist() {
-  const container = document.getElementById('winsChecklist');
-  container.innerHTML = '';
-
-  masterWins.forEach((win, index) => {
-    const isCompleted = appState.completedWins.includes(index);
-    
-    const card = document.createElement('label');
-    card.className = `check-item ${isCompleted ? 'completed' : ''}`;
-    card.innerHTML = `
-      <input type="checkbox" data-index="${index}" ${isCompleted ? 'checked disabled' : ''}>
-      <span>${win}</span>
-    `;
-
-    const input = card.querySelector('input');
-    input.addEventListener('change', (e) => {
-      if (e.target.checked && !appState.completedWins.includes(index)) {
-        appState.completedWins.push(index);
-        localStorage.setItem('panda_completed_wins', JSON.stringify(appState.completedWins));
+    if (mode === 'login') {
+        tabLogin.classList.add('text-primary', 'border-secondary-container');
+        tabLogin.classList.remove('text-on-surface-variant', 'border-transparent');
         
-        card.classList.add('completed');
-        input.disabled = true;
+        tabSignup.classList.remove('text-primary', 'border-secondary-container');
+        tabSignup.classList.add('text-on-surface-variant', 'border-transparent');
+        
+        formLogin.classList.remove('hidden');
+        formSignup.classList.add('hidden');
+    } else {
+        tabSignup.classList.add('text-primary', 'border-secondary-container');
+        tabSignup.classList.remove('text-on-surface-variant', 'border-transparent');
+        
+        tabLogin.classList.remove('text-primary', 'border-secondary-container');
+        tabLogin.classList.add('text-on-surface-variant', 'border-transparent');
+        
+        formSignup.classList.remove('hidden');
+        formLogin.classList.add('hidden');
+    }
+}
 
-        // Visual explosions & sounds
-        playSparkleSound();
-        triggerConfettiBlast();
-        updateWinsProgress();
+// === ENTRANCE & AUTHENTICATION ===
+async function enterSanctuary() {
+    let username, password, confirmPassword;
+    let endpoint = '/api/login';
+    let payload = {};
 
-        // Garden planting check (Sprout every 5 wins)
-        if (appState.completedWins.length % 5 === 0) {
-          sproutNewGardenPlant();
+    if (currentAuthMode === 'login') {
+        username = document.getElementById('loginUsername').value.trim();
+        password = document.getElementById('loginPassword').value.trim();
+        if (!username || !password) {
+            showToast("Please enter both username and password.");
+            return;
         }
-
-        // Full check congrats
-        if (appState.completedWins.length === masterWins.length) {
-          triggerCongratulationsScreen();
+        endpoint = '/api/login';
+        payload = { username, password };
+    } else {
+        username = document.getElementById('signupUsername').value.trim();
+        password = document.getElementById('signupPassword').value.trim();
+        confirmPassword = document.getElementById('signupConfirm').value.trim();
+        if (!username || !password || !confirmPassword) {
+            showToast("Please fill all sign up fields.");
+            return;
         }
-      }
-    });
+        if (password !== confirmPassword) {
+            showToast("Passwords do not match!");
+            return;
+        }
+        endpoint = '/api/signup';
+        payload = { username, password, confirmPassword };
+    }
 
-    container.appendChild(card);
-  });
-}
+    const uiContainer = document.getElementById('ui-container');
+    const leftGate = document.getElementById('gate-left');
+    const rightGate = document.getElementById('gate-right');
+    const flashOverlay = document.getElementById('flash-overlay');
 
-function updateWinsProgress() {
-  const bar = document.getElementById('winsProgressBar');
-  const textPercent = document.getElementById('winsProgressPercent');
-  const countText = document.getElementById('winsCountText');
+    if (!uiContainer || !leftGate || !rightGate) return;
 
-  const count = appState.completedWins.length;
-  const percent = Math.round((count / masterWins.length) * 100);
-
-  bar.style.width = `${percent}%`;
-  textPercent.innerText = `${percent}%`;
-  countText.innerText = `You've completed ${count} of ${masterWins.length} tiny wins today! So proud of you!`;
-}
-
-function triggerConfettiBlast() {
-  for (let i = 0; i < 20; i++) {
-    setTimeout(() => spawnParticle(['🎉', '✨', '🌸', '💖']), i * 40);
-  }
-}
-
-// Sprout new plant and space perfectly side-by-side
-async function sproutNewGardenPlant() {
-  const dateStr = new Date().toLocaleDateString();
-  let plant = {
-    emoji: gardenPlants[Math.floor(Math.random() * gardenPlants.length)],
-    date: dateStr,
-    imageUrl: null
-  };
-
-  showToast(`🌱 A new plant sprouted in your Comfort Garden!`);
-
-  const hasHF = keys.hf || backendKeys.hf;
-
-  // Call HF API if key available to make a custom plant
-  if (hasHF) {
+    // Call Backend
     try {
-      const response = await fetch('/api/mood-comfort', {
-        method: 'POST',
-        headers: getAPIHeaders(),
-        body: JSON.stringify({
-          userName: appState.userName,
-          pandaName: appState.pandaName,
-          mood: `plant sprout ${plant.emoji} cute kawaii illustration`
-        })
-      });
-      if (response.ok) {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
         const data = await response.json();
-        if (data.imageUrl) plant.imageUrl = data.imageUrl;
-      }
-    } catch (e) {
-      console.log("Could not generate custom image sprite, falling back to emoji.");
-    }
-  }
-
-  appState.garden.push(plant);
-  localStorage.setItem('panda_garden_list', JSON.stringify(appState.garden));
-  renderGardenGrass();
-}
-
-function renderGardenGrass() {
-  const bed = document.getElementById('gardenBed');
-  bed.innerHTML = '';
-
-  if (appState.garden.length === 0) {
-    bed.innerHTML = `<div class="empty-garden-placeholder">Start completing wins to sprout flora! (Every 5 wins)</div>`;
-    return;
-  }
-
-  appState.garden.forEach(plant => {
-    const item = document.createElement('div');
-    item.className = 'plant-item';
-    
-    if (plant.imageUrl) {
-      item.innerHTML = `
-        <img class="plant-image" src="${plant.imageUrl}" alt="Sprout">
-        <div class="plant-tooltip">Planted on ${plant.date} - You were strong on this day.</div>
-      `;
-    } else {
-      item.innerHTML = `
-        <span>${plant.emoji}</span>
-        <div class="plant-tooltip">Planted on ${plant.date} - You were strong on this day.</div>
-      `;
-    }
-    bed.appendChild(item);
-  });
-
-  // Scroll to the end
-  const container = document.querySelector('.grass-bed-container');
-  if (container) {
-    container.scrollLeft = container.scrollWidth;
-  }
-}
-
-// Congrats Modal (All 22 Wins checked)
-async function triggerCongratulationsScreen() {
-  const modal = document.getElementById('congratsModal');
-  const textBox = document.getElementById('congratsCustomMessage');
-  const closeBtn = document.getElementById('closeCongratsBtn');
-  const okBtn = document.getElementById('congratsCloseBtn');
-  const loader = document.getElementById('congratsLoading');
-
-  modal.classList.remove('hidden');
-  loader.classList.remove('hidden');
-  textBox.innerHTML = '';
-
-  const hasGemini = keys.gemini || backendKeys.gemini;
-
-  try {
-    let msg = "";
-    if (hasGemini) {
-      const res = await fetch('/api/congrats', {
-        method: 'POST',
-        headers: getAPIHeaders(),
-        body: JSON.stringify({
-          userName: appState.userName,
-          pandaName: appState.pandaName
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        msg = data.congratsMessage;
-      }
-    }
-    
-    if (!msg) {
-      // Local Fallback
-      await new Promise(r => setTimeout(r, 1000));
-      msg = `Oh my stars, ${appState.userName}! You checked off every single win today! ${appState.pandaName} is incredibly proud of your care and dedication. Treat yourself to a warm cup of cocoa or a cozy sleep. You deserve it!`;
-    }
-
-    textBox.innerText = msg;
-  } catch (e) {
-    textBox.innerText = `You did it, ${appState.userName}! Every single tiny win checked off. I am so proud of you. Let's start a new checklist next time.`;
-  } finally {
-    loader.classList.add('hidden');
-  }
-
-  const closeModal = () => {
-    modal.classList.add('hidden');
-    appState.completedWins = [];
-    appState.garden = [];
-    localStorage.setItem('panda_completed_wins', JSON.stringify([]));
-    localStorage.setItem('panda_garden_list', JSON.stringify([]));
-    renderWinsChecklist();
-    updateWinsProgress();
-    renderGardenGrass();
-    showToast("Wins and garden reset! Let's build a new collection.");
-  };
-
-  closeBtn.onclick = closeModal;
-  okBtn.onclick = closeModal;
-}
-
-// --- Let It Go Box & Breathing (Tab 2) ---
-function initRelease() {
-  const textInput = document.getElementById('letItGoText');
-  const validateBtn = document.getElementById('validateReleaseBtn');
-  const shredBtn = document.getElementById('shredBtn');
-  const floatBtn = document.getElementById('floatBtn');
-  const validationArea = document.getElementById('releaseValidationArea');
-  const validationText = document.getElementById('validationSentence');
-  const loading = document.getElementById('releaseLoading');
-
-  const shredder = document.getElementById('paperShredder');
-  const shredderStrips = document.getElementById('shredderStrips');
-  
-  const lantern = document.getElementById('floatingLantern');
-  const lanternText = document.getElementById('lanternText');
-
-  const hasGemini = keys.gemini || backendKeys.gemini;
-
-  validateBtn.addEventListener('click', async () => {
-    const text = textInput.value.trim();
-    if (!text) {
-      showToast("Write down what is bothering you first.");
-      return;
-    }
-
-    loading.classList.remove('hidden');
-    validateBtn.disabled = true;
-
-    try {
-      let validation = "";
-      if (hasGemini) {
-        const res = await fetch('/api/validate-release', {
-          method: 'POST',
-          headers: getAPIHeaders(),
-          body: JSON.stringify({ releaseText: text, userName: appState.userName })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          validation = data.validation;
-        }
-      }
-      
-      if (!validation) {
-        await new Promise(r => setTimeout(r, 800));
-        validation = `It makes complete sense that you feel heavy from that, ${appState.userName}. Let's release it together.`;
-      }
-
-      validationText.innerText = validation;
-      validationArea.classList.remove('hidden');
-      shredBtn.classList.remove('hidden');
-      floatBtn.classList.remove('hidden');
-      playMelodySound();
-    } catch (err) {
-      console.error(err);
-      validationText.innerText = "I hear you, friend. Let's let it go.";
-      validationArea.classList.remove('hidden');
-      shredBtn.classList.remove('hidden');
-      floatBtn.classList.remove('hidden');
-    } finally {
-      loading.classList.add('hidden');
-      validateBtn.disabled = false;
-    }
-  });
-
-  shredBtn.addEventListener('click', () => {
-    textInput.classList.add('hidden');
-    shredder.classList.remove('hidden');
-    
-    playShredderSound();
-
-    shredderStrips.innerHTML = '';
-    for (let i = 0; i < 18; i++) {
-      const strip = document.createElement('div');
-      strip.className = 'paper-strip';
-      strip.style.animationDelay = `${Math.random() * 0.4}s`;
-      shredderStrips.appendChild(strip);
-    }
-
-    setTimeout(() => {
-      textInput.value = '';
-      textInput.classList.remove('hidden');
-      shredder.classList.add('hidden');
-      validationArea.classList.add('hidden');
-      shredBtn.classList.add('hidden');
-      floatBtn.classList.add('hidden');
-      showToast("🗑️ Shredded! Barnaby shredded the worries away.");
-    }, 1500);
-  });
-
-  floatBtn.addEventListener('click', () => {
-    const textVal = textInput.value;
-    textInput.classList.add('hidden');
-    
-    lanternText.innerText = textVal.substring(0, 30) + (textVal.length > 30 ? '...' : '');
-    lantern.className = 'lantern-overlay animating-lantern-float';
-    lantern.classList.remove('hidden');
-
-    playSparkleSound();
-
-    setTimeout(() => {
-      textInput.value = '';
-      textInput.classList.remove('hidden');
-      lantern.classList.add('hidden');
-      lantern.className = 'lantern-overlay hidden';
-      validationArea.classList.add('hidden');
-      shredBtn.classList.add('hidden');
-      floatBtn.classList.add('hidden');
-      showToast("🏮 Lantern floated peacefully into the starry sky.");
-    }, 2200);
-  });
-}
-
-function initBreathing() {
-  const startBtn = document.getElementById('startBreathingBtn');
-  const stateText = document.getElementById('breathingState');
-  const timerText = document.getElementById('breathingTimer');
-  const balloon = document.getElementById('pastelBalloon');
-
-  let timerInterval = null;
-
-  startBtn.addEventListener('click', () => {
-    startBtn.style.display = 'none';
-    runBreathingLoop();
-  });
-
-  function runBreathingLoop() {
-    // 1. Inhale (4s)
-    stateText.innerText = "Breathe In...";
-    let count = 4;
-    timerText.innerText = `${count}s`;
-    
-    balloon.className = "pastel-balloon balloon-in";
-
-    timerInterval = setInterval(() => {
-      count--;
-      if (count > 0) {
-        timerText.innerText = `${count}s`;
-      } else {
-        clearInterval(timerInterval);
-        holdPhase();
-      }
-    }, 1000);
-  }
-
-  function holdPhase() {
-    // 2. Hold (7s)
-    stateText.innerText = "Hold...";
-    let count = 7;
-    timerText.innerText = `${count}s`;
-
-    balloon.className = "pastel-balloon balloon-hold";
-
-    timerInterval = setInterval(() => {
-      count--;
-      if (count > 0) {
-        timerText.innerText = `${count}s`;
-      } else {
-        clearInterval(timerInterval);
-        exhalePhase();
-      }
-    }, 1000);
-  }
-
-  function exhalePhase() {
-    // 3. Exhale (8s)
-    stateText.innerText = "Exhale...";
-    let count = 8;
-    timerText.innerText = `${count}s`;
-
-    balloon.className = "pastel-balloon balloon-out";
-
-    timerInterval = setInterval(() => {
-      count--;
-      if (count > 0) {
-        timerText.innerText = `${count}s`;
-      } else {
-        clearInterval(timerInterval);
-        // Complete
-        stateText.innerText = "Peaceful...";
-        timerText.innerText = "Well done";
-        balloon.className = "pastel-balloon";
         
-        startBtn.style.display = 'inline-block';
-        startBtn.innerText = 'Breathe Again';
-      }
-    }, 1000);
-  }
-}
+        if (!response.ok) {
+            throw new Error(data.error || "Authentication failed");
+        }
 
-// --- 10 Reasons You Are Amazing (Tab 3) ---
-function initReasons() {
-  const refreshBtn = document.getElementById('refreshReasonsBtn');
-  refreshBtn.addEventListener('click', () => fetchNewReasons(true));
+        userToken = data.token;
+        userState = data.state;
+        localStorage.setItem('panda_token', userToken);
+        
+        renderState();
+        loadDailyWins();
+        refreshAffirmations();
 
-  // Determine if we need to reload from cache or select new
-  const todayStr = new Date().toDateString();
-  if (appState.reasons.length === 10 && appState.reasonsDate === todayStr) {
-    renderReasonsGrid(appState.reasons);
-  } else {
-    fetchNewReasons();
-  }
-}
-
-async function fetchNewReasons(force = false) {
-  const grid = document.getElementById('reasonsGrid');
-  const loader = document.getElementById('reasonsLoading');
-  
-  loader.classList.remove('hidden');
-  grid.innerHTML = '';
-
-  const hasGemini = keys.gemini || backendKeys.gemini;
-
-  try {
-    let list = [];
-    if (hasGemini) {
-      // Call Gemini custom compliment
-      const res = await fetch('/api/custom-compliment', {
-        method: 'POST',
-        headers: getAPIHeaders(),
-        body: JSON.stringify({ userName: appState.userName })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        list = data.reasons;
-      }
+    } catch (err) {
+        showToast(err.message);
+        return;
     }
+
+    // Fade out UI
+    uiContainer.style.opacity = '0';
     
-    if (list.length === 0) {
-      // Pull 10 random from master array
-      const shuffled = [...masterReasons].sort(() => 0.5 - Math.random());
-      list = shuffled.slice(0, 10);
-    }
+    // Open Gates
+    setTimeout(() => {
+        leftGate.classList.add('gate-transition-left');
+        rightGate.classList.add('gate-transition-right');
+    }, 400);
 
-    // Cache
-    appState.reasons = list;
-    appState.reasonsDate = new Date().toDateString();
-    localStorage.setItem('panda_reasons_cache', JSON.stringify(list));
-    localStorage.setItem('panda_reasons_date', appState.reasonsDate);
+    // Flash transition
+    setTimeout(() => {
+        if(flashOverlay) flashOverlay.style.opacity = '1';
+    }, 1800);
 
-    renderReasonsGrid(list);
-  } catch (err) {
-    console.error(err);
-    const shuffled = [...masterReasons].sort(() => 0.5 - Math.random());
-    renderReasonsGrid(shuffled.slice(0, 10));
-  } finally {
-    loader.classList.add('hidden');
-  }
+    // Navigate and reset
+    setTimeout(() => {
+        navTo('hub-district');
+        showToast(`Welcome to the Sanctuary, ${username}.`);
+        if(flashOverlay) flashOverlay.style.opacity = '0';
+    }, 3500);
 }
 
-function renderReasonsGrid(reasons) {
-  const grid = document.getElementById('reasonsGrid');
-  grid.innerHTML = '';
+// === STATE RENDERING ===
+let dailyWinsCache = [];
 
-  reasons.forEach((reason, index) => {
-    const card = document.createElement('div');
-    card.className = 'flip-card';
-    card.innerHTML = `
-      <div class="flip-card-inner">
-        <div class="flip-card-front">${index + 1}</div>
-        <div class="flip-card-back">${reason}</div>
-      </div>
-    `;
+function renderState() {
+    if (!userState) return;
 
-    card.addEventListener('click', () => {
-      card.classList.toggle('flipped');
-      if (card.classList.contains('flipped')) {
-        playSparkleSound();
-        spawnSparklesAroundCard(card);
-      }
+    // Render completed count
+    updateWinsCounter();
+
+    // Render Memories
+    const memoryList = document.getElementById('recent-memories-list');
+    if (memoryList) {
+        memoryList.innerHTML = '';
+        if (userState.memories && userState.memories.length > 0) {
+            userState.memories.slice().reverse().forEach(mem => {
+                const div = document.createElement('div');
+                div.className = 'bg-surface-container-high/50 p-4 rounded-lg border-l-4 border-secondary-container mb-4';
+                const dateStr = new Date(mem.date).toLocaleDateString();
+                div.innerHTML = `<p class="italic text-on-surface">"${mem.text}"</p><span class="text-label-md text-on-surface-variant block mt-2 opacity-70">— ${dateStr}</span>`;
+                memoryList.appendChild(div);
+            });
+        }
+    }
+
+    // Render Garden
+    const gardenArea = document.getElementById('comfort-garden-area');
+    if (gardenArea) {
+        if (userState.garden && userState.garden.length > 0) {
+            gardenArea.innerHTML = '';
+            userState.garden.forEach((flower, i) => {
+                const f = document.createElement('span');
+                f.textContent = flower;
+                f.className = 'animate-bob drop-shadow-lg text-2xl';
+                f.style.animationDelay = `${i * 0.2}s`;
+                f.style.position = 'absolute';
+                f.style.left = `${10 + Math.random() * 80}%`;
+                f.style.bottom = `${10 + Math.random() * 30}%`;
+                gardenArea.appendChild(f);
+            });
+        }
+    }
+
+    // Render Tree Stage
+    const treeTitles = document.querySelectorAll('h2.font-display-lg.text-primary');
+    treeTitles.forEach(t => {
+        if(t.textContent === 'Memory Heart' || t.textContent.includes('Tree') || t.textContent === 'Sapling') {
+            t.textContent = userState.treeStage || 'Sapling';
+        }
+    });
+}
+
+function updateWinsCounter() {
+    const counter = document.getElementById('wins-counter');
+    if (!counter || !userState) return;
+    const done = userState.completedWins ? userState.completedWins.length : 0;
+    counter.textContent = `${done}/12`;
+}
+
+async function loadDailyWins() {
+    const data = await apiCall('/api/user/daily-wins', null, 'GET');
+    if (!data || !data.wins) return;
+
+    dailyWinsCache = data.wins;
+    const list = document.getElementById('wins-checkbox-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    dailyWinsCache.forEach((win, idx) => {
+        const isCompleted = userState && userState.completedWins && userState.completedWins.includes(win.text);
+        
+        const label = document.createElement('label');
+        label.className = `flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none ${isCompleted ? 'bg-primary/10 border-secondary-container/50 opacity-60' : 'bg-surface-container-high border-outline/20 hover:border-secondary-container'}`;
+        label.innerHTML = `
+            <input type="checkbox" ${isCompleted ? 'checked disabled' : ''} class="w-5 h-5 accent-[#14422d] rounded cursor-pointer flex-shrink-0" data-win-idx="${idx}" />
+            <span class="text-lg flex-shrink-0">${win.emoji || '✨'}</span>
+            <div class="flex-1 min-w-0">
+                <span class="font-body-md text-sm ${isCompleted ? 'line-through text-on-surface-variant' : 'text-on-surface'}">${win.text}</span>
+                <span class="block text-[10px] text-on-surface-variant uppercase tracking-wider">${win.category}</span>
+            </div>`;
+
+        const checkbox = label.querySelector('input');
+        if (!isCompleted) {
+            checkbox.addEventListener('change', () => handleWinCheck(win, label, checkbox));
+        }
+        list.appendChild(label);
     });
 
-    grid.appendChild(card);
-  });
+    updateWinsCounter();
 }
 
-function spawnSparklesAroundCard(card) {
-  for (let i = 0; i < 8; i++) {
-    spawnParticle(['✨', '💖', '⭐']);
-  }
-}
+async function handleWinCheck(win, label, checkbox) {
+    checkbox.disabled = true;
+    label.classList.add('bg-primary/10', 'border-secondary-container/50');
+    label.classList.remove('hover:border-secondary-container');
+    label.querySelector('.font-body-md').classList.add('line-through', 'text-on-surface-variant');
 
-// --- Emergency Happiness Button ---
-function initEmergency() {
-  const btn = document.getElementById('emergencyBtn');
-  const loader = document.getElementById('emergencyLoading');
-  const output = document.getElementById('emergencyOutput');
-  const textContent = document.getElementById('emergencyTextContent');
-  const imgCont = document.getElementById('emergencyImageContainer');
-  const imgEl = document.getElementById('emergencyImg');
+    const res = await apiCall('/api/progress/win', { winText: win.text });
 
-  const hasGemini = keys.gemini || backendKeys.gemini;
+    if (res && res.success) {
+        showToast("Spark logged! Tree XP +10 ✨");
+        updateWinsCounter();
 
-  btn.addEventListener('click', async () => {
-    loader.classList.remove('hidden');
-    output.classList.add('hidden');
-    textContent.innerText = '';
-    imgCont.classList.add('hidden');
-
-    try {
-      let data;
-      if (hasGemini) {
-        const response = await fetch('/api/emergency-happiness', {
-          method: 'POST',
-          headers: getAPIHeaders(),
-          body: JSON.stringify({
-            userName: appState.userName,
-            pandaName: appState.pandaName
-          })
-        });
-        if (response.ok) {
-          data = await response.json();
+        // Bloom flower animation every 5 wins
+        if (res.shouldBloom) {
+            triggerFlowerBloom();
         }
-      }
-
-      if (!data) {
-        // Shuffle local 75 items
-        await new Promise(r => setTimeout(r, 800));
-        const itemStr = masterEmergencyActions[Math.floor(Math.random() * masterEmergencyActions.length)];
-        data = parseEmergencyActionLocal(itemStr);
-      }
-
-      renderEmergencySurprise(data);
-    } catch (e) {
-      console.error(e);
-      showToast("Surprise!");
-      triggerCSSAnimation('confetti');
-    } finally {
-      loader.classList.add('hidden');
     }
-  });
-
-  function parseEmergencyActionLocal(actionStr) {
-    if (actionStr.startsWith('Joke:')) {
-      return { type: 'joke', content: actionStr.replace('Joke:', '').trim() };
-    }
-    if (actionStr.startsWith('Motivational quote:')) {
-      return { type: 'quote', content: actionStr.replace('Motivational quote:', '').trim() };
-    }
-    if (actionStr.includes('confetti') || actionStr.includes('hearts') || actionStr.includes('butterflies') || actionStr.includes('bubbles') || actionStr.includes('leaves')) {
-      let anim = 'confetti';
-      if (actionStr.includes('butterflies')) anim = 'butterfly-swarm';
-      if (actionStr.includes('bubbles')) anim = 'bubble-burst';
-      if (actionStr.includes('hearts')) anim = 'hearts';
-      return { type: 'animation', content: anim };
-    }
-    if (actionStr.includes('warmth')) {
-      return { type: 'animation', content: 'warmth-pulse' };
-    }
-    if (actionStr.includes('screen-shaking') || actionStr.includes('VIRTUAL')) {
-      return { type: 'animation', content: 'screen-shake' };
-    }
-    return { type: 'story', content: actionStr };
-  }
-
-  function renderEmergencySurprise(data) {
-    output.classList.remove('hidden');
-
-    if (data.type === 'joke') {
-      textContent.innerText = `💬 Joke of the Day:\n\n"${data.content}"`;
-      playMelodySound();
-    } else if (data.type === 'story') {
-      textContent.innerText = `📖 Cute Story:\n\n${data.content}`;
-      playMelodySound();
-    } else if (data.type === 'quote') {
-      textContent.innerText = `🌸 A gentle reminder:\n\n"${data.content}"`;
-      playMelodySound();
-    } else if (data.type === 'image') {
-      textContent.innerText = `🎨 Draw prompt: "${data.content}"`;
-      if (data.imageUrl) {
-        imgEl.src = data.imageUrl;
-        imgCont.classList.remove('hidden');
-      }
-    } else if (data.type === 'animation') {
-      textContent.innerText = `✨ Magic Cast: "${data.content.toUpperCase()}!"`;
-      triggerCSSAnimation(data.content);
-    }
-  }
-
-  function triggerCSSAnimation(type) {
-    if (type === 'confetti' || type === 'butterfly-swarm' || type === 'hearts') {
-      const icons = type === 'confetti' ? ['🎉', '✨', '🎈'] : (type === 'hearts' ? ['💖', '💕', '❤️'] : ['🦋', '🌸']);
-      for (let i = 0; i < 40; i++) {
-        setTimeout(() => spawnParticle(icons), i * 35);
-      }
-      playSparkleSound();
-    } else if (type === 'warmth-pulse') {
-      document.body.classList.add('flash-warmth');
-      setTimeout(() => document.body.classList.remove('flash-warmth'), 2000);
-      playMelodySound();
-    } else if (type === 'screen-shake') {
-      document.body.classList.add('shake-screen');
-      setTimeout(() => document.body.classList.remove('shake-screen'), 500);
-      playMelodySound();
-    } else if (type === 'bubble-burst') {
-      for (let i = 0; i < 30; i++) {
-        setTimeout(() => spawnParticle(['🫧', '⚪']), i * 40);
-      }
-      playSparkleSound();
-    }
-  }
 }
 
-// --- Gentle Background Particle Spawner ---
-function initParticles() {
-  setInterval(() => {
-    if (document.hidden) return;
-    spawnParticle(['🦋', '🌸', '✨', '☁️'], true);
-  }, 3500);
+function triggerFlowerBloom() {
+    const layer = document.getElementById('flower-anim-layer');
+    if (!layer) return;
+
+    const flowers = ['🌸', '🌺', '🌻', '🌼', '🌷', '🌹', '💐'];
+    const flower = flowers[Math.floor(Math.random() * flowers.length)];
+
+    const el = document.createElement('div');
+    el.textContent = flower;
+    el.style.cssText = 'position:fixed; font-size:48px; z-index:91; pointer-events:none;';
+    el.style.left = '50%';
+    el.style.bottom = '20%';
+    layer.appendChild(el);
+
+    showToast("🌸 A flower blooms! Your garden is growing!");
+
+    // Animate: grow, float up to tree
+    el.animate([
+        { transform: 'translate(-50%, 0) scale(0) rotate(0deg)', opacity: 0 },
+        { transform: 'translate(-50%, 0) scale(1.5) rotate(20deg)', opacity: 1, offset: 0.3 },
+        { transform: 'translate(-50%, -60vh) scale(0.5) rotate(360deg)', opacity: 0 }
+    ], {
+        duration: 3000,
+        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+    }).onfinish = () => el.remove();
+
+    // Spawn extra petals
+    for (let i = 0; i < 8; i++) {
+        const petal = document.createElement('div');
+        petal.textContent = '🌸';
+        petal.style.cssText = `position:fixed; font-size:20px; pointer-events:none; left:${40+Math.random()*20}%; bottom:20%;`;
+        layer.appendChild(petal);
+        petal.animate([
+            { transform: 'translate(0,0) scale(0)', opacity: 0 },
+            { transform: `translate(${(Math.random()-0.5)*300}px, ${-200 - Math.random()*400}px) scale(1)`, opacity: 0.8, offset: 0.5 },
+            { transform: `translate(${(Math.random()-0.5)*500}px, ${-500 - Math.random()*300}px) scale(0.3)`, opacity: 0 }
+        ], { duration: 2500 + Math.random()*1500, easing: 'ease-out' }).onfinish = () => petal.remove();
+    }
 }
 
-function spawnParticle(emojis = ['✨', '🌸', '💖', '⭐', '🦋'], isBackground = false) {
-  const container = document.getElementById(isBackground ? 'particles-bg' : 'particles-fg');
-  if (!container) return;
+// === GLOBAL NOTIFICATIONS (TOASTS) ===
+function showToast(message) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
 
-  const particle = document.createElement('div');
-  particle.className = 'particle';
-  particle.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    container.appendChild(toast);
 
-  const randomLeft = Math.random() * 100;
-  const duration = Math.random() * 5 + 8; 
-  const fontSize = Math.random() * 1.5 + 0.8; 
-
-  particle.style.left = `${randomLeft}vw`;
-  particle.style.animationDuration = `${duration}s`;
-  particle.style.fontSize = `${fontSize}rem`;
-
-  if (isBackground) {
-    particle.style.opacity = '0.18'; // softer drifting opacity
-  }
-
-  container.appendChild(particle);
-
-  setTimeout(() => particle.remove(), duration * 1000);
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 400);
+    }, 3000);
 }
 
-// --- Toast System ---
-function showToast(msg, duration = 4000) {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
+// === MODAL HELPERS ===
+function showAiModalLoading() {
+    const modal = document.getElementById('ai-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.getElementById('ai-modal-loading').classList.remove('hidden');
+    document.getElementById('ai-modal-content').classList.add('hidden');
+    document.getElementById('ai-modal-image').classList.add('hidden');
+}
 
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.innerText = msg;
+function showAiModalContent(title, bodyHTML, imageUrl) {
+    document.getElementById('ai-modal-loading').classList.add('hidden');
+    const content = document.getElementById('ai-modal-content');
+    content.classList.remove('hidden');
+    
+    document.getElementById('ai-modal-title').textContent = title;
+    document.getElementById('ai-modal-body').innerHTML = bodyHTML;
+    
+    const img = document.getElementById('ai-modal-image');
+    if (imageUrl) {
+        img.src = imageUrl;
+        img.classList.remove('hidden');
+    } else {
+        img.classList.add('hidden');
+    }
+}
 
-  container.appendChild(toast);
+function closeAiModal() {
+    const modal = document.getElementById('ai-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
 
-  setTimeout(() => {
-    toast.classList.add('fade-out');
-    setTimeout(() => toast.remove(), 400);
-  }, duration);
+function closeWinsModal() {
+    const modal = document.getElementById('wins-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// === API CALL WRAPPERS ===
+async function apiCall(endpoint, payload, method = 'POST') {
+    if (!userToken) return null;
+    try {
+        const options = {
+            method,
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userToken}`
+            }
+        };
+        if (payload && method !== 'GET') options.body = JSON.stringify(payload);
+        
+        const res = await fetch(endpoint, options);
+        const data = await res.json();
+        if (data.state) {
+            userState = data.state;
+            renderState();
+        }
+        return data;
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+// === MOOD CHECK-IN ===
+async function logMood(mood) {
+    showToast(`Mood recorded: ${mood}. Barnaby is here for you.`);
+    
+    // 1. Log progress XP
+    await apiCall('/api/progress/mood', { mood });
+    
+    // 2. Fetch AI Comfort Messages
+    showAiModalLoading();
+    const data = await apiCall('/api/mood-comfort', {
+        userName: userState?.userName || 'Traveler',
+        pandaName: 'Barnaby',
+        mood: mood
+    });
+
+    if (data && data.comfortMessages) {
+        let html = '<ul class="text-left space-y-4">';
+        data.comfortMessages.forEach(msg => {
+            html += `<li class="bg-surface-container-high/50 p-4 rounded-lg border-l-4 border-secondary-container">${msg}</li>`;
+        });
+        html += '</ul>';
+        showAiModalContent(data.greeting || "Hello there...", html, data.imageUrl);
+    } else {
+        showAiModalContent("Barnaby is here for you.", "<p>Sometimes words are hard, but I'm sending you a big hug.</p>");
+    }
+}
+
+// === TINY WINS === (now handled by checkbox list in loadDailyWins)
+function promptWin() {
+    // Scroll to the checkbox list
+    const list = document.getElementById('wins-checkbox-list');
+    if (list) list.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// === AFFIRMATIONS ===
+async function refreshAffirmations() {
+    const textEl = document.getElementById('affirmation-text');
+    if(!textEl) return;
+    textEl.style.opacity = '0';
+    
+    setTimeout(async () => {
+        // Try calling custom compliment
+        const data = await apiCall('/api/custom-compliment', { userName: userState?.userName || 'Traveler' });
+        
+        let quote = "You are doing your best, and that is enough.";
+        if (data && data.reasons && data.reasons.length > 0) {
+            quote = data.reasons[Math.floor(Math.random() * data.reasons.length)];
+        }
+        
+        textEl.textContent = `"${quote}"`;
+        textEl.style.transition = 'opacity 1s';
+        textEl.style.opacity = '1';
+    }, 500);
+}
+
+// === LET IT GO BOX ===
+function letItGo(method) {
+    const input = document.getElementById('letItGoInput');
+    if(!input || input.value.trim() === '') {
+        showToast("Write something to release first.");
+        return;
+    }
+
+    const text = input.value.trim();
+
+    input.style.transition = 'all 1s ease-in-out';
+    if (method === 'shred') {
+        input.style.transform = 'scaleY(0) skewX(20deg)';
+        input.style.opacity = '0';
+        showToast("Shredded and recycled into the earth.");
+    } else {
+        input.style.transform = 'translateY(-100px) scale(0.5)';
+        input.style.opacity = '0';
+        showToast("Released to the wind.");
+    }
+
+    // Call API just for validation message
+    apiCall('/api/validate-release', { releaseText: text, userName: userState?.userName || 'Traveler' }).then(data => {
+        if (data && data.validation) {
+            setTimeout(() => showToast(data.validation), 2000);
+        }
+    });
+
+    setTimeout(() => {
+        input.value = '';
+        input.style.transition = 'none';
+        input.style.transform = 'none';
+        input.style.opacity = '1';
+    }, 1500);
+}
+
+// === EMERGENCY HAPPINESS ===
+async function triggerEmergencyHappiness() {
+    showToast("Calling Barnaby for Emergency Happiness...");
+    
+    // Confetti
+    for(let i=0; i<30; i++) {
+        const conf = document.createElement('div');
+        conf.className = 'absolute w-3 h-3 rounded-sm';
+        conf.style.backgroundColor = ['#feb15d', '#8fd3c7', '#ffdcbd', '#14422d'][Math.floor(Math.random()*4)];
+        conf.style.left = `${Math.random()*100}vw`;
+        conf.style.top = `-10vh`;
+        conf.style.zIndex = '9999';
+        document.body.appendChild(conf);
+
+        conf.animate([
+            { transform: 'translate3d(0,0,0) rotate(0)', opacity: 1 },
+            { transform: `translate3d(${(Math.random()-0.5)*200}px, 110vh, 0) rotate(${Math.random()*720}deg)`, opacity: 0 }
+        ], {
+            duration: 2000 + Math.random()*2000,
+            easing: 'cubic-bezier(.37,0,.63,1)'
+        }).onfinish = () => conf.remove();
+    }
+
+    showAiModalLoading();
+    const data = await apiCall('/api/emergency-happiness', { userName: userState?.userName || 'Traveler', pandaName: 'Barnaby' });
+    
+    if (data) {
+        showAiModalContent("Emergency Happiness Deployed!", `<p class="italic text-xl">"${data.content}"</p>`, data.imageUrl);
+    } else {
+        closeAiModal();
+    }
+}
+
+// === BALLOON BREATHING ===
+let breathingInterval;
+function toggleBreathing() {
+    const circle = document.getElementById('breathing-circle');
+    const text = document.getElementById('breathing-text');
+    const icon = document.getElementById('breathing-icon');
+    
+    if (breathingInterval) {
+        clearInterval(breathingInterval);
+        breathingInterval = null;
+        circle.style.transform = 'scale(1)';
+        text.textContent = "Click to start";
+        icon.style.opacity = '1';
+        return;
+    }
+
+    let phase = 0; // 0=inhale, 1=hold, 2=exhale
+    icon.style.opacity = '0';
+    
+    function breathCycle() {
+        if (phase === 0) {
+            text.textContent = "Inhale...";
+            circle.style.transform = 'scale(1.5)';
+            circle.style.backgroundColor = 'rgba(143, 211, 199, 0.6)'; // tertiary
+            phase = 1;
+        } else if (phase === 1) {
+            text.textContent = "Hold...";
+            phase = 2;
+        } else {
+            text.textContent = "Exhale...";
+            circle.style.transform = 'scale(1)';
+            circle.style.backgroundColor = 'rgba(254, 177, 93, 0.4)'; // secondary
+            phase = 0;
+        }
+    }
+    
+    breathCycle(); // immediate start
+    breathingInterval = setInterval(breathCycle, 4000);
+}
+
+// === MEMORY GROVE: FIREFLIES ===
+function releaseFirefly() {
+    const input = document.getElementById('memoryInput');
+    const text = input ? input.value : '';
+    
+    if (text.trim() === '') return;
+
+    apiCall('/api/progress/memory', { memoryText: text });
+
+    const firefliesLayer = document.getElementById('fireflies-layer');
+    if (firefliesLayer) {
+        for(let i=0; i<12; i++) {
+            const f = document.createElement('div');
+            f.className = 'firefly-mote';
+            f.style.left = `${window.innerWidth/2}px`;
+            f.style.top = `${window.innerHeight - 200}px`;
+            f.style.boxShadow = '0 0 20px 4px rgba(254,177,93,1)';
+            firefliesLayer.appendChild(f);
+            
+            f.animate([
+                { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                { transform: `translate(${(Math.random()-0.5)*800}px, -${300+Math.random()*600}px) scale(0.5)`, opacity: 0 }
+            ], {
+                duration: 4000 + Math.random() * 3000,
+                easing: 'cubic-bezier(0.1, 0, 0.3, 1)'
+            }).onfinish = () => f.remove();
+        }
+    }
+    
+    if (input) input.value = '';
+    showToast("A new memory joins the grove. Tree XP +20");
+}
+
+function initGlobalFireflies() {
+    const firefliesLayer = document.getElementById('fireflies-layer');
+    if (!firefliesLayer) return;
+
+    function createFirefly() {
+        const firefly = document.createElement('div');
+        firefly.className = 'firefly-mote';
+        firefly.style.left = `${Math.random() * window.innerWidth}px`;
+        firefly.style.top = `${Math.random() * window.innerHeight}px`;
+        
+        const size = 2 + Math.random() * 4;
+        firefly.style.width = `${size}px`;
+        firefly.style.height = `${size}px`;
+        firefly.style.opacity = '0';
+        firefliesLayer.appendChild(firefly);
+
+        const duration = 15000 + Math.random() * 20000;
+        const xMove = (Math.random() - 0.5) * 400;
+        const yMove = (Math.random() - 0.5) * 400;
+
+        const animation = firefly.animate([
+            { transform: 'translate(0, 0)', opacity: 0 },
+            { transform: `translate(${xMove/2}px, ${yMove/2}px)`, opacity: 0.6, offset: 0.5 },
+            { transform: `translate(${xMove}px, ${yMove}px)`, opacity: 0 }
+        ], {
+            duration: duration,
+            easing: 'ease-in-out',
+            iterations: 1
+        });
+
+        animation.onfinish = () => {
+            firefly.remove();
+            createFirefly();
+        };
+    }
+
+    for(let i=0; i < 20; i++) setTimeout(createFirefly, Math.random() * 8000);
+}
+
+// === CANVAS GAMES ===
+let gameActive = false;
+let gameLoopId;
+let canvasCtx;
+let currentGame = '';
+let gameCanvas;
+
+// Game state
+let panda = {};
+let collectibles = [];
+let particles = [];
+let bgTrees = [];
+let gameTime = 0;
+let gameKeys = {};
+
+function startDumplingsGame() {
+    document.getElementById('game-title').textContent = "Panda's Lost Dumplings";
+    document.getElementById('game-overlay-text').textContent = "Use Arrow Keys / WASD to collect 10 Dumplings!";
+    currentGame = 'dumplings';
+    openGameModal();
+}
+
+function startForestAdventure() {
+    document.getElementById('game-title').textContent = "Forest Firefly Hunt";
+    document.getElementById('game-overlay-text').textContent = "Catch 15 glowing fireflies in the enchanted forest!";
+    currentGame = 'adventure';
+    openGameModal();
+}
+
+function openGameModal() {
+    const modal = document.getElementById('game-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    gameCanvas = document.getElementById('game-canvas');
+    canvasCtx = gameCanvas.getContext('2d');
+    gameCanvas.width = gameCanvas.clientWidth;
+    gameCanvas.height = gameCanvas.clientHeight;
+    document.getElementById('game-overlay').style.display = 'flex';
+    document.getElementById('game-start-btn').textContent = 'Play!';
+    document.getElementById('game-start-btn').onclick = startGameLoop;
+    gameActive = false;
+}
+
+function closeGame() {
+    document.getElementById('game-modal').classList.add('hidden');
+    document.getElementById('game-modal').classList.remove('flex');
+    gameActive = false;
+    cancelAnimationFrame(gameLoopId);
+    window.removeEventListener('keydown', gameKeyDown);
+    window.removeEventListener('keyup', gameKeyUp);
+    if (panda.score > 0) {
+        apiCall('/api/progress/game', { gameId: currentGame, score: panda.score * 10 });
+        showToast(`Game Over! Earned ${panda.score * 10} XP.`);
+    }
+}
+
+function gameKeyDown(e) { gameKeys[e.key.toLowerCase()] = true; e.preventDefault(); }
+function gameKeyUp(e) { gameKeys[e.key.toLowerCase()] = false; }
+
+function startGameLoop() {
+    document.getElementById('game-overlay').style.display = 'none';
+    const W = gameCanvas.width, H = gameCanvas.height;
+    gameKeys = {};
+    particles = [];
+    gameTime = 0;
+
+    // Generate background trees
+    bgTrees = [];
+    for (let i = 0; i < 12; i++) {
+        bgTrees.push({
+            x: Math.random() * W,
+            h: 80 + Math.random() * 120,
+            w: 15 + Math.random() * 15,
+            shade: Math.random() * 0.3
+        });
+    }
+
+    const targetCount = currentGame === 'dumplings' ? 10 : 15;
+
+    panda = { x: W / 2, y: H - 60, size: 24, speed: 4.5, score: 0, targetScore: targetCount, vx: 0, vy: 0, facing: 1, bobTime: 0 };
+
+    collectibles = [];
+    for (let i = 0; i < targetCount; i++) {
+        collectibles.push({
+            x: 40 + Math.random() * (W - 80),
+            y: 40 + Math.random() * (H - 120),
+            collected: false,
+            bobOffset: Math.random() * Math.PI * 2,
+            glow: 0.5 + Math.random() * 0.5
+        });
+    }
+
+    gameActive = true;
+    window.addEventListener('keydown', gameKeyDown);
+    window.addEventListener('keyup', gameKeyUp);
+
+    function loop() {
+        if (!gameActive) return;
+        gameTime += 0.016;
+        update(W, H);
+        draw(W, H);
+        gameLoopId = requestAnimationFrame(loop);
+    }
+    loop();
+}
+
+function update(W, H) {
+    const accel = 0.6;
+    const friction = 0.85;
+    
+    if (gameKeys['arrowleft'] || gameKeys['a']) { panda.vx -= accel; panda.facing = -1; }
+    if (gameKeys['arrowright'] || gameKeys['d']) { panda.vx += accel; panda.facing = 1; }
+    if (gameKeys['arrowup'] || gameKeys['w']) panda.vy -= accel;
+    if (gameKeys['arrowdown'] || gameKeys['s']) panda.vy += accel;
+    
+    panda.vx *= friction;
+    panda.vy *= friction;
+    panda.x += panda.vx;
+    panda.y += panda.vy;
+    panda.bobTime += 0.1;
+
+    // Bounds
+    panda.x = Math.max(panda.size, Math.min(W - panda.size, panda.x));
+    panda.y = Math.max(panda.size, Math.min(H - panda.size, panda.y));
+
+    // Collisions
+    collectibles.forEach(obj => {
+        if (!obj.collected) {
+            const dist = Math.hypot(panda.x - obj.x, panda.y - obj.y);
+            if (dist < panda.size + 16) {
+                obj.collected = true;
+                panda.score++;
+                // Burst particles
+                for (let i = 0; i < 10; i++) {
+                    particles.push({
+                        x: obj.x, y: obj.y,
+                        vx: (Math.random() - 0.5) * 6,
+                        vy: (Math.random() - 0.5) * 6,
+                        life: 1,
+                        color: currentGame === 'dumplings' ? '#feb15d' : '#8fd3c7',
+                        size: 3 + Math.random() * 4
+                    });
+                }
+            }
+        }
+    });
+
+    // Update particles
+    particles = particles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.025;
+        p.size *= 0.97;
+        return p.life > 0;
+    });
+
+    // Win condition
+    if (panda.score >= panda.targetScore) {
+        gameActive = false;
+        document.getElementById('game-overlay').style.display = 'flex';
+        document.getElementById('game-overlay-text').textContent = `🎉 You collected them all! Score: ${panda.score}`;
+        document.getElementById('game-start-btn').textContent = 'Close & Collect XP';
+        document.getElementById('game-start-btn').onclick = closeGame;
+    }
+}
+
+function draw(W, H) {
+    const ctx = canvasCtx;
+
+    // Sky gradient
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+    skyGrad.addColorStop(0, '#0a1628');
+    skyGrad.addColorStop(0.5, '#14422d');
+    skyGrad.addColorStop(1, '#1a5c3a');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    for (let i = 0; i < 30; i++) {
+        const sx = (i * 137.5) % W;
+        const sy = (i * 97.3) % (H * 0.5);
+        const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(gameTime * 2 + i));
+        ctx.fillStyle = `rgba(255,255,200,${twinkle * 0.6})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Moon
+    ctx.fillStyle = 'rgba(255,240,200,0.9)';
+    ctx.beginPath();
+    ctx.arc(W - 80, 60, 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = skyGrad;
+    ctx.beginPath();
+    ctx.arc(W - 70, 55, 28, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Background bamboo trees
+    bgTrees.forEach(t => {
+        ctx.fillStyle = `rgba(20,66,45,${0.4 + t.shade})`;
+        ctx.fillRect(t.x, H - t.h, t.w, t.h);
+        // Leaves
+        ctx.fillStyle = `rgba(30,90,50,${0.5 + t.shade})`;
+        ctx.beginPath();
+        ctx.ellipse(t.x + t.w / 2, H - t.h - 10, t.w * 1.5, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Ground
+    const groundGrad = ctx.createLinearGradient(0, H - 40, 0, H);
+    groundGrad.addColorStop(0, '#1a5c3a');
+    groundGrad.addColorStop(1, '#0d3320');
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, H - 40, W, 40);
+    // Grass tufts
+    for (let i = 0; i < W; i += 12) {
+        ctx.fillStyle = `rgba(40,120,60,${0.5 + Math.random() * 0.3})`;
+        const gh = 5 + Math.random() * 10;
+        ctx.fillRect(i, H - 40 - gh, 3, gh);
+    }
+
+    // Draw collectibles
+    collectibles.forEach(obj => {
+        if (obj.collected) return;
+        const bob = Math.sin(gameTime * 3 + obj.bobOffset) * 4;
+        const glow = obj.glow * (0.8 + 0.2 * Math.sin(gameTime * 4 + obj.bobOffset));
+
+        if (currentGame === 'dumplings') {
+            // Dumpling glow
+            ctx.shadowColor = '#feb15d';
+            ctx.shadowBlur = 15 * glow;
+            // Dumpling body (steamed bun shape)
+            ctx.fillStyle = '#fff5e6';
+            ctx.beginPath();
+            ctx.ellipse(obj.x, obj.y + bob, 14, 11, 0, Math.PI, 0);
+            ctx.ellipse(obj.x, obj.y + bob, 14, 6, 0, 0, Math.PI);
+            ctx.fill();
+            // Pleats on top
+            ctx.strokeStyle = '#e8c98a';
+            ctx.lineWidth = 1.5;
+            for (let p = -2; p <= 2; p++) {
+                ctx.beginPath();
+                ctx.moveTo(obj.x + p * 4, obj.y + bob - 8);
+                ctx.lineTo(obj.x + p * 3, obj.y + bob - 3);
+                ctx.stroke();
+            }
+            ctx.shadowBlur = 0;
+        } else {
+            // Firefly
+            ctx.shadowColor = '#8fd3c7';
+            ctx.shadowBlur = 20 * glow;
+            ctx.fillStyle = `rgba(143,211,199,${glow})`;
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y + bob, 8, 0, Math.PI * 2);
+            ctx.fill();
+            // Inner bright core
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(obj.x, obj.y + bob, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    });
+
+    // Draw particles
+    particles.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // Draw Panda
+    drawPanda(ctx, panda.x, panda.y + Math.sin(panda.bobTime) * 2, panda.size, panda.facing);
+
+    // HUD
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 4;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(10, 10, 180, 40);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fdf9ef';
+    ctx.font = 'bold 18px Literata, serif';
+    const itemName = currentGame === 'dumplings' ? '🥟 Dumplings' : '✨ Fireflies';
+    ctx.fillText(`${itemName}: ${panda.score}/${panda.targetScore}`, 20, 37);
+
+    // Progress bar
+    const progress = panda.score / panda.targetScore;
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(10, 55, 180, 6);
+    ctx.fillStyle = currentGame === 'dumplings' ? '#feb15d' : '#8fd3c7';
+    ctx.fillRect(10, 55, 180 * progress, 6);
+}
+
+function drawPanda(ctx, x, y, size, facing) {
+    const s = size;
+    ctx.save();
+    ctx.translate(x, y);
+    if (facing === -1) ctx.scale(-1, 1);
+
+    // Body
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(0, 6, s * 0.8, s * 0.9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Head
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, -s * 0.5, s * 0.75, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Ears
+    ctx.fillStyle = '#1c1c16';
+    ctx.beginPath();
+    ctx.arc(-s * 0.55, -s * 1.0, s * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(s * 0.55, -s * 1.0, s * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eye patches
+    ctx.fillStyle = '#1c1c16';
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.25, -s * 0.55, s * 0.22, s * 0.18, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(s * 0.25, -s * 0.55, s * 0.22, s * 0.18, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes (white dots)
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-s * 0.22, -s * 0.55, s * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(s * 0.22, -s * 0.55, s * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eye pupils
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(-s * 0.20, -s * 0.53, s * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(s * 0.24, -s * 0.53, s * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Nose
+    ctx.fillStyle = '#333';
+    ctx.beginPath();
+    ctx.ellipse(0, -s * 0.35, s * 0.08, s * 0.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Smile
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(0, -s * 0.3, s * 0.15, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+
+    // Arms (black)
+    ctx.fillStyle = '#1c1c16';
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.7, 4, s * 0.25, s * 0.5, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(s * 0.7, 4, s * 0.25, s * 0.5, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Feet
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.3, s * 0.8, s * 0.25, s * 0.15, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(s * 0.3, s * 0.8, s * 0.25, s * 0.15, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Blush
+    ctx.fillStyle = 'rgba(255,180,180,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.4, -s * 0.35, s * 0.12, s * 0.07, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(s * 0.4, -s * 0.35, s * 0.12, s * 0.07, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+// === WEBGL SHADER: BACKGROUND AMBIENCE ===
+function initShader() {
+    const canvas = document.getElementById('shader-canvas');
+    if (!canvas) return;
+
+    function syncSize() {
+        const w = canvas.clientWidth  || window.innerWidth;
+        const h = canvas.clientHeight || window.innerHeight;
+        if (canvas.width !== w || canvas.height !== h) {
+            canvas.width  = w;
+            canvas.height = h;
+        }
+    }
+    window.addEventListener('resize', syncSize);
+    syncSize();
+
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) return;
+    
+    const vs = `attribute vec2 a_position;
+    varying vec2 v_texCoord;
+    void main() {
+        v_texCoord = a_position * 0.5 + 0.5;
+        gl_Position = vec4(a_position, 0.0, 1.0);
+    }`;
+    
+    const fs = `precision highp float;
+    varying vec2 v_texCoord;
+    uniform float u_time;
+    uniform vec2 u_resolution;
+
+    // Simplex noise for organic movement
+    vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+    float snoise(vec2 v){
+      const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.571353306247832, 0.024390243902439);
+      vec2 i  = floor(v + dot(v, C.yy) );
+      vec2 x0 = v -   i + dot(i, C.xx);
+      vec2 i1;
+      i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+      vec4 x12 = x0.xyxy + C.xxzz;
+      x12.xy -= i1;
+      i = mod(i, 289.0);
+      vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+      vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+      m = m*m ;
+      m = m*m ;
+      vec3 x = 2.0 * fract(p * C.www) - 1.0;
+      vec3 h = abs(x) - 0.5;
+      vec3 a0 = x - floor(x + 0.5);
+      m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+      vec3 g;
+      g.x  = a0.x  * x0.x  + h.x  * x0.y;
+      g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+      return 130.0 * dot(m, g);
+    }
+
+    void main() {
+        vec2 uv = v_texCoord;
+        vec3 colorA = vec3(0.05, 0.12, 0.08); // Deep Forest
+        vec3 colorB = vec3(0.1, 0.15, 0.25);  // Twilight Indigo
+        
+        float noise = snoise(uv * 2.0 + u_time * 0.1);
+        vec3 color = mix(colorA, colorB, noise * 0.5 + 0.5);
+        
+        float firefly = 0.0;
+        for(int i = 0; i < 5; i++) {
+            vec2 pos = vec2(
+                sin(u_time * 0.5 + float(i) * 1.5) * 0.4 + 0.5,
+                cos(u_time * 0.3 + float(i) * 2.1) * 0.4 + 0.5
+            );
+            float dist = length(uv - pos);
+            firefly += 0.001 / (dist * dist);
+        }
+        
+        color += vec3(0.9, 0.8, 0.4) * firefly;
+        gl_FragColor = vec4(color, 1.0);
+    }`;
+
+    function cs(type, src) {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        return s;
+    }
+
+    const prog = gl.createProgram();
+    gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+    gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    
+    const pos = gl.getAttribLocation(prog, 'a_position');
+    gl.enableVertexAttribArray(pos);
+    gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+    
+    const uTime = gl.getUniformLocation(prog, 'u_time');
+    const uRes = gl.getUniformLocation(prog, 'u_resolution');
+
+    function render(t) {
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        if (uTime) gl.uniform1f(uTime, t * 0.001);
+        if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+        requestAnimationFrame(render);
+    }
+    
+    render(0);
 }

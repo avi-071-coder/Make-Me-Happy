@@ -1,350 +1,563 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="light" lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panda's Comfort Corner 🐼</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Panda's Comfort Corner</title>
+  
+  <!-- Tailwind CSS & Plugins -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
   <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400..700;1,400..700&family=Be+Vietnam+Pro:wght@400;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  
+  <!-- Custom Styles -->
+  <link href="style.css" rel="stylesheet"/>
+  
+  <!-- Tailwind Config from Stitch -->
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary-fixed-dim": "#8fd3c7",
+            "surface-tint": "#3a674f",
+            "outline-variant": "#c0c9c1",
+            "primary-fixed": "#bceecf",
+            "on-error-container": "#93000a",
+            "surface-container-low": "#f7f3e9",
+            "on-secondary-container": "#744300",
+            "surface-bright": "#fdf9ef",
+            "tertiary-container": "#0e5c53",
+            "on-tertiary": "#ffffff",
+            "secondary": "#8a5100",
+            "tertiary": "#00433c",
+            "surface-container-highest": "#e6e2d8",
+            "on-primary-container": "#9fcfb2",
+            "secondary-container": "#feb15d",
+            "surface-variant": "#e6e2d8",
+            "inverse-on-surface": "#f4f0e6",
+            "primary-fixed-dim": "#a1d1b4",
+            "tertiary-fixed": "#abf0e3",
+            "on-primary": "#ffffff",
+            "error-container": "#ffdad6",
+            "inverse-surface": "#31312a",
+            "surface-container-high": "#ece8de",
+            "on-error": "#ffffff",
+            "primary-container": "#2d5a43",
+            "inverse-primary": "#a1d1b4",
+            "surface-dim": "#dddad0",
+            "primary": "#14422d",
+            "outline": "#717973",
+            "surface-container": "#f1eee4",
+            "on-tertiary-container": "#8ed2c6",
+            "secondary-fixed": "#ffdcbd",
+            "surface": "#fdf9ef",
+            "error": "#ba1a1a",
+            "on-surface-variant": "#414943",
+            "background": "#fdf9ef",
+            "on-background": "#1c1c16",
+            "on-secondary-fixed-variant": "#693c00",
+            "on-secondary": "#ffffff",
+            "on-secondary-fixed": "#2c1600",
+            "on-primary-fixed": "#002112",
+            "on-tertiary-fixed-variant": "#005048",
+            "on-surface": "#1c1c16",
+            "on-primary-fixed-variant": "#224f39",
+            "secondary-fixed-dim": "#ffb86e",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary-fixed": "#00201c"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "section-margin": "64px",
+            "unit": "8px",
+            "container-padding-desktop": "40px",
+            "container-padding-mobile": "20px",
+            "element-gap": "24px"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Literata"],
+            "headline-lg": ["Literata"],
+            "body-md": ["Be Vietnam Pro"],
+            "label-md": ["Be Vietnam Pro"],
+            "headline-md": ["Literata"],
+            "body-lg": ["Be Vietnam Pro"],
+            "display-lg": ["Literata"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["28px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "headline-lg": ["32px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+            "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body class="night-mode"> <!-- Force Dark Mode globally -->
 
-  <!-- Cute Loading Screen -->
-  <div id="loadingScreen" class="loading-screen">
-    <div class="sleeping-panda-container">
-      <img src="images/sleeping.png" class="sleeping-panda-img" alt="Sleeping Panda">
-      <div class="loader-bar">
-        <div class="loader-progress"></div>
+<body class="bg-background text-on-background min-h-screen overflow-x-hidden font-body-md text-body-md selection:bg-secondary-container">
+  
+  <!-- Global Toast Container -->
+  <div id="toastContainer"></div>
+
+  <!-- Background Shader -->
+  <div class="fixed inset-0 w-full h-full z-0 opacity-40 pointer-events-none" style="display:block;">
+    <canvas id="shader-canvas" style="display:block;width:100%;height:100%"></canvas>
+  </div>
+  
+  <!-- Background Decor: Fireflies Container (For Memory Grove) -->
+  <div class="fixed inset-0 pointer-events-none z-0" id="fireflies-layer"></div>
+
+  <!-- Global Header (Hidden initially for Entrance) -->
+  <header id="global-header" class="hidden bg-surface/80 dark:bg-primary-container/80 backdrop-blur-md fixed top-0 w-full z-50 shadow-sm flex justify-between items-center px-container-padding-mobile md:px-container-padding-desktop py-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden border-2 border-secondary-container">
+        <img alt="Barnaby the Panda" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa0p2XI95vOTOuD3Yid66pcQbos5LekeB5XI5W0KYJ3Vbr9nWx4i8OzFe8heliWbfCSRhyKS8SI2CZWd5k8BygSKMjtU41_-_q4yXrl8G87u2OM-hjRWh9zUZz2UdDTyP2Mb6nh8FJvSMVmtIcjqvmE7mdQVsWmT5C4etd_B1tt_SsqYUDAGiRx9ey6K4ZqaZ8CwZCU0s2pAytGOmTaElPiCf3woxex4W_S3avq3LJe-zXOpzRHofXJusg4DO4MfTpqzcJYbJgD5Q"/>
       </div>
-      <div class="loading-text">Waking up Barnaby...</div>
+      <h1 class="font-headline-md text-headline-md italic text-primary dark:text-primary-fixed-dim">Comfort Corner</h1>
     </div>
-  </div>
-
-  <!-- Floating Background Elements -->
-  <div id="particles-bg"></div>
-  <div id="particles-fg"></div>
-  <div class="clouds-container">
-    <div class="cloud cloud-1">☁️</div>
-    <div class="cloud cloud-2">☁️</div>
-    <div class="cloud cloud-3">☁️</div>
-  </div>
-
-  <!-- Header & Navigation -->
-  <header>
-    <div class="logo-area">
-      <img src="images/logo.png" class="logo-img" alt="Panda Logo">
-      <h1>Panda's Comfort Corner</h1>
-      <span class="logo-icon">🐼</span>
-    </div>
-    <div class="header-controls">
-      <button id="settingsBtn" class="icon-btn" title="API Settings">⚙️</button>
+    <div class="flex items-center gap-4">
+      <nav class="hidden md:flex gap-8">
+        <a class="font-label-md text-label-md text-secondary dark:text-secondary-fixed font-bold hover:scale-105 transition-transform" href="#" onclick="navTo('hub-district')">Home</a>
+        <a class="font-label-md text-label-md text-on-surface-variant dark:text-on-primary-container hover:scale-105 hover:text-secondary transition-all" href="#" onclick="navTo('adventure-district')">Forest</a>
+        <a class="font-label-md text-label-md text-on-surface-variant dark:text-on-primary-container hover:scale-105 hover:text-secondary transition-all" href="#" onclick="navTo('memory-district')">Memory</a>
+      </nav>
+      <button onclick="toggleSettings()" class="material-symbols-outlined text-primary hover:scale-105 transition-transform">settings</button>
     </div>
   </header>
 
-  <!-- Key Warning Banner -->
-  <div id="keyWarning" class="warning-banner hidden">
-    <span>⚠️ API Keys not configured in backend. Running in fallback mode.</span>
-  </div>
+  <!-- SPA Container -->
+  <div id="spa-container">
 
-  <!-- Tab Navigation -->
-  <nav class="main-nav">
-    <button class="nav-tab active" data-tab="home">🏡 Home & Garden</button>
-    <button class="nav-tab" data-tab="release">🌬️ Breathe & Release</button>
-    <button class="nav-tab" data-tab="joy">💖 Reasons & Joy</button>
-  </nav>
-
-  <!-- Main Content Container -->
-  <main class="content-container">
-
-    <!-- TAB 1: HOME (COMPANION & GARDEN) -->
-    <section id="tab-home" class="tab-content active">
-      <!-- Welcome Section -->
-      <div class="welcome-box glass">
-        <h2 id="welcomeText">Hi Sunshine ☀️</h2>
-        <p id="welcomeSubtitle"><span class="p-name">Barnaby</span> missed you! No matter how today feels, you're not facing it alone.</p>
-      </div>
-
-      <!-- Main Companion Image -->
-      <div class="panda-companion-card glass">
-        <div class="panda-visual-wrapper">
-          <div id="heartContainer" class="heart-spawner"></div>
-          <img id="mainIdlePanda" class="panda-avatar-img" src="images/happy.png" alt="Happy Panda">
+    <!-- ========================================== -->
+    <!-- DISTRICT: ENTRANCE GATES (Login/Auth)      -->
+    <!-- ========================================== -->
+    <main id="entrance-district" class="district-section relative z-10 w-full h-screen flex items-center justify-center">
+      <!-- Environment Decoration: Floating Lanterns -->
+      <div class="absolute inset-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-1/4 left-[10%] animate-float animate-glow" style="animation-delay: 0s;">
+          <span class="material-symbols-outlined text-secondary-container text-5xl" style="font-variation-settings: 'FILL' 1;">light</span>
         </div>
-        <div class="panda-dialogue glass">
-          <p id="pandaSpeech">Hello, <span class="u-name">Friend</span>! I am <span class="p-name">Barnaby</span>. I'm here to support you.</p>
+        <div class="absolute top-1/3 right-[15%] animate-float animate-glow" style="animation-delay: 1.5s;">
+          <span class="material-symbols-outlined text-secondary-container text-4xl" style="font-variation-settings: 'FILL' 1;">light</span>
+        </div>
+        <div class="absolute bottom-1/4 left-[20%] animate-float animate-glow" style="animation-delay: 3s;">
+          <span class="material-symbols-outlined text-secondary-container text-6xl" style="font-variation-settings: 'FILL' 1;">light</span>
         </div>
       </div>
-
-      <!-- How Are You Feeling Today? Mood Cards -->
-      <div class="mood-section-cards">
-        <h3>How are you feeling today?</h3>
-        <div class="mood-grid">
-          <button class="mood-card glass shadow-sad" data-mood="sad">
-            <span class="mood-emoji">😔</span>
-            <span class="mood-label">Sad</span>
-          </button>
-          <button class="mood-card glass shadow-stressed" data-mood="stressed">
-            <span class="mood-emoji">😣</span>
-            <span class="mood-label">Stressed</span>
-          </button>
-          <button class="mood-card glass shadow-sick" data-mood="sick">
-            <span class="mood-emoji">🤒</span>
-            <span class="mood-label">Sick</span>
-          </button>
-          <button class="mood-card glass shadow-angry" data-mood="angry">
-            <span class="mood-emoji">😠</span>
-            <span class="mood-label">Angry</span>
-          </button>
-          <button class="mood-card glass shadow-motivation" data-mood="motivation">
-            <span class="mood-emoji">🚀</span>
-            <span class="mood-label">Need Motivation</span>
-          </button>
+      
+      <!-- The Gates Container -->
+      <div class="relative w-[90%] max-w-[1000px] h-[618px] flex items-center justify-center perspective-[1500px]" id="gate-container">
+        <!-- Left Gate -->
+        <div class="absolute left-0 w-1/2 h-full bg-primary-container wood-texture border-r-4 border-secondary-fixed-dim/30 shadow-2xl origin-left transition-all duration-1000 overflow-hidden flex items-center justify-end pr-8" id="gate-left">
+          <div class="absolute inset-0 opacity-10 pointer-events-none">
+            <div class="w-full h-full border-[16px] border-double border-on-primary-container rounded-sm m-4"></div>
+          </div>
+          <span class="material-symbols-outlined text-on-primary-container/20 text-[200px] select-none">nature</span>
         </div>
-      </div>
-
-      <!-- Full-Screen Mood Response Overlay Section (Hidden Initially) -->
-      <div id="moodFullscreenOverlay" class="mood-fullscreen-overlay hidden">
-        <div id="moodOverlayEffects" class="overlay-effects-container"></div>
-        <button id="closeMoodOverlay" class="back-home-overlay-btn">✨ Back to Home</button>
         
-        <div class="mood-response-wrapper">
-          <!-- Left Visual Block -->
-          <div class="mood-visual-block">
-            <img id="moodPandaImg" class="panda-avatar-img-large" src="images/happy.png" alt="Mood Panda">
-            <div id="moodResponseLoading" class="loading-spinner hidden">
-              <span class="spinner">🎨</span> Drawing custom panda...
-            </div>
+        <!-- Right Gate -->
+        <div class="absolute right-0 w-1/2 h-full bg-primary-container wood-texture border-l-4 border-secondary-fixed-dim/30 shadow-2xl origin-right transition-all duration-1000 overflow-hidden flex items-center justify-start pl-8" id="gate-right">
+          <div class="absolute inset-0 opacity-10 pointer-events-none">
+            <div class="w-full h-full border-[16px] border-double border-on-primary-container rounded-sm m-4"></div>
           </div>
-          <!-- Right Comfort Block -->
-          <div class="mood-comfort-block">
-            <h2 id="moodResponseGreeting">Oh, sweetheart...</h2>
-            <div class="comfort-scroller">
-              <h4>5 Comforting Messages:</h4>
-              <ul id="comfortMessagesList" class="comfort-list">
-                <!-- 10 messages populating -->
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tiny Wins & Comfort Garden -->
-      <div class="wins-garden-section glass">
-        <!-- Daily wins checklist -->
-        <div class="wins-area">
-          <div class="wins-header">
-            <h3>Today's Tiny Wins 🌟</h3>
-            <button id="resetWinsBtn" class="sec-btn">🔄 Reset Wins</button>
-          </div>
+          <span class="material-symbols-outlined text-on-primary-container/20 text-[200px] select-none">forest</span>
           
-          <!-- Progress bar -->
-          <div class="wins-progress-container">
-            <div class="progress-bar-outline">
-              <div id="winsProgressBar" class="progress-bar-fill" style="width: 0%"></div>
-            </div>
-            <span id="winsProgressPercent">0%</span>
-          </div>
-
-          <p id="winsCountText">You've completed 0 tiny wins today! So proud of you!</p>
-          
-          <div id="winsChecklist" class="wins-checklist wins-grid-layout">
-            <!-- 22 items populated via script.js -->
-          </div>
-        </div>
-
-        <!-- Horizontal grass garden -->
-        <div class="garden-area">
-          <h3>The Comfort Garden 🌱</h3>
-          <p class="section-desc">A persistent visual representation of your self-care journey. Sprout a new plant every 5 wins!</p>
-          <div class="garden-container-wrapper">
-            <div class="grass-bed-container">
-              <div id="gardenBed" class="grass-bed">
-                <!-- side-by-side sprouts with zero white gaps -->
-                <div class="empty-garden-placeholder">Start completing wins to sprout flora!</div>
+          <!-- Barnaby the Panda Peeking Out -->
+          <div class="absolute -left-12 bottom-10 z-20">
+            <div class="relative w-48 h-48">
+              <img alt="Barnaby the Panda" class="w-full h-full drop-shadow-xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYegqSJEvZk2RmVNDge7Wnw3RJYDpqaCWiH50qmV73FEHfMtH-cbCqUiinEfAoS02zOK-qoVDg2k_96H00WdKdoIm0nyKgMQLPy-ZsplUJ0wNO1rz8E9orJF7IUNW83Flc87Qznr2HnxaC16Ok6QYD48f3me67-QjbfUZuit9PaEC5A3RXeNvjMVvAcACxxhYicTM0EnS69CUCfhqzQAhIsbcjDfeijWZb8bmhX644g-Dbq21H7YqAB-iy8UV51S6SyuXDHalHPpk"/>
+              <div class="absolute bottom-10 left-10 animate-glow">
+                <span class="material-symbols-outlined text-secondary-container text-3xl" style="font-variation-settings: 'FILL' 1;">light</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
-
-    <!-- TAB 2: BREATHE & RELEASE -->
-    <section id="tab-release" class="tab-content">
-      <div class="release-grid">
-        <!-- Let It Go Box -->
-        <div class="let-it-go-card glass">
-          <h3>The "Let It Go" Box 🌬️</h3>
-          <p>Type out whatever is stressing, saddening, or bothering you. We will validate it, then let it go together.</p>
+        
+        <!-- Path Leading Up (Background/Middle) -->
+        <div class="absolute -bottom-20 w-32 h-64 bg-gradient-to-t from-surface-dim to-transparent opacity-40 blur-xl transform -rotate-12"></div>
+        
+        <!-- Center Content: Login Form & Signpost Button -->
+        <div class="relative z-30 flex flex-col items-center gap-6 transition-all duration-700 mt-[-200px]" id="ui-container">
+          <div class="text-center space-y-4">
+            <h1 class="font-display-lg text-display-lg text-secondary drop-shadow-lg italic">Comfort Corner</h1>
+            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-md mx-auto">Where every step leads back to peace.</p>
+          </div>
           
-          <div class="let-it-go-wrapper">
-            <!-- Floating Lantern Overlay -->
-            <div id="floatingLantern" class="lantern-overlay hidden">
-              <div class="lantern-body">🏮</div>
-              <div id="lanternText" class="lantern-text"></div>
-            </div>
-
-            <!-- Paper Shredder Graphics overlay -->
-            <div id="paperShredder" class="shredder-overlay hidden">
-              <div class="shredder-top">📟 Shredder</div>
-              <div class="shredder-slots"></div>
-              <div class="shredder-strips-container" id="shredderStrips">
-                <!-- Falling paper strips -->
-              </div>
-            </div>
-
-            <textarea id="letItGoText" placeholder="Write your thoughts here..."></textarea>
-          </div>
-
-          <div id="releaseValidationArea" class="validation-box hidden">
-            <p id="validationSentence"></p>
-          </div>
-
-          <div id="releaseLoading" class="loading-spinner hidden">
-            <span class="spinner">💭</span> Barnaby is listening closely...
-          </div>
-
-          <div class="button-row">
-            <button id="validateReleaseBtn" class="primary-btn">Share with Panda</button>
-            <button id="shredBtn" class="shred-btn hidden">🗑️ Shred It</button>
-            <button id="floatBtn" class="float-btn hidden">🎈 Float It</button>
-          </div>
-        </div>
-
-        <!-- Balloon Breathing Widget -->
-        <div class="breathing-card glass">
-          <h3>Balloon Breathing 🌬️</h3>
-          <p>Breathe along with the balloon (4-7-8 Method). Watch it gently expand and contract to calm your mind.</p>
-          
-          <div class="breathing-container">
-            <div class="breathing-instructions">
-              <span id="breathingState">Breathe In...</span>
-              <span id="breathingTimer">4s</span>
+          <div class="parchment-card p-6 border border-outline-variant shadow-lg flex flex-col gap-4 w-full max-w-[320px]">
+            <!-- Tabs -->
+            <div class="flex border-b border-outline-variant/30 pb-2 mb-2">
+              <button id="tab-login" class="flex-1 text-center font-label-md text-primary font-bold border-b-2 border-secondary-container" onclick="switchAuthTab('login')">Log In</button>
+              <button id="tab-signup" class="flex-1 text-center font-label-md text-on-surface-variant font-bold border-b-2 border-transparent hover:text-primary transition-colors" onclick="switchAuthTab('signup')">Sign Up</button>
             </div>
             
-            <!-- Pastel Balloon is now the only breathing visual -->
-            <div id="pastelBalloon" class="pastel-balloon">🎈</div>
+            <!-- Login Form -->
+            <div id="form-login" class="flex flex-col gap-3">
+              <input type="text" id="loginUsername" placeholder="Username" class="w-full bg-surface-container-high border border-outline/30 rounded-lg px-4 py-2 font-body-md focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-all text-sm" />
+              <input type="password" id="loginPassword" placeholder="Password" class="w-full bg-surface-container-high border border-outline/30 rounded-lg px-4 py-2 font-body-md focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-all text-sm" />
+            </div>
 
-            <div class="breathing-toggle-buttons">
-              <button id="startBreathingBtn" class="primary-btn">Start Breathing</button>
+            <!-- Signup Form (Hidden initially) -->
+            <div id="form-signup" class="flex flex-col gap-3 hidden">
+              <input type="text" id="signupUsername" placeholder="Choose a Username" class="w-full bg-surface-container-high border border-outline/30 rounded-lg px-4 py-2 font-body-md focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-all text-sm" />
+              <input type="password" id="signupPassword" placeholder="Create Password" class="w-full bg-surface-container-high border border-outline/30 rounded-lg px-4 py-2 font-body-md focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-all text-sm" />
+              <input type="password" id="signupConfirm" placeholder="Confirm Password" class="w-full bg-surface-container-high border border-outline/30 rounded-lg px-4 py-2 font-body-md focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-all text-sm" />
+            </div>
+          </div>
+
+          <!-- The Wooden Signpost Button -->
+          <button class="group relative px-12 py-6 transform transition-all duration-300 hover:scale-105 active:scale-95" onclick="enterSanctuary()">
+            <div class="absolute -top-12 left-10 w-1 h-14 bg-secondary/40"></div>
+            <div class="absolute -top-12 right-10 w-1 h-14 bg-secondary/40"></div>
+            <div class="relative bg-primary-container wood-texture px-10 py-6 rounded-sm border-4 border-secondary shadow-[0_10px_30px_rgba(0,0,0,0.3)] transition-all group-hover:rotate-1 group-hover:-translate-y-1">
+              <span class="font-headline-md text-headline-md text-secondary-container uppercase tracking-widest drop-shadow-sm">Enter the Sanctuary</span>
+              <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-transparent via-secondary-container/10 to-transparent"></div>
+            </div>
+            <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-secondary-container/30 blur-2xl group-hover:bg-secondary-container/50 transition-all"></div>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Moonlit Bamboo Foreground elements -->
+      <div class="fixed bottom-0 left-0 p-8 z-40 pointer-events-none md:block hidden">
+        <div class="flex gap-4 items-end">
+          <div class="w-4 h-96 bg-primary/40 rounded-full border-r-2 border-primary/20 bamboo-node"></div>
+          <div class="w-6 h-[500px] bg-primary/30 rounded-full border-r-2 border-primary/20 bamboo-node -rotate-3"></div>
+        </div>
+      </div>
+      <div class="fixed bottom-0 right-0 p-8 z-40 pointer-events-none md:block hidden">
+        <div class="flex gap-4 items-end justify-end">
+          <div class="w-6 h-[450px] bg-primary/30 rounded-full border-l-2 border-primary/20 bamboo-node rotate-3"></div>
+          <div class="w-4 h-80 bg-primary/40 rounded-full border-l-2 border-primary/20 bamboo-node"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- DISTRICT: GREAT PANDA TREE (Hub)           -->
+    <!-- ========================================== -->
+    <main id="hub-district" class="district-section hidden-section relative z-10 pt-24 pb-32 min-h-screen flex flex-col items-center">
+      <div class="relative w-full max-w-5xl aspect-square md:aspect-video flex flex-col items-center justify-center pointer-events-none">
+        <div class="absolute inset-0 flex items-center justify-center">
+          <img alt="The Great Panda Tree" class="w-full h-full object-contain mix-blend-multiply opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_dSCBHGD6lhS4G4TRl8vkXBdSwDPz4Mp1mPyBWsPVERff1RkBw2IwXvX-rwzD9oF9YnsWfocjrz6AxczA6scL4NV3vbjTC0tK3A-HoauWl952yWpGnUjtghm5CG2aJwfIH-gbpTHL7Uf4USutiwclHJbNL_APSPPw9t3jTX5JGiTqczwYH-ftbvjX3ApYvqZSm7wfXB9cTEec2bxQiq0sUFtWhDW4LCiiKlGqTATUN9Jwyc7rZu73kW0RBBrIO1s65RYtgIgFMnc"/>
+          <div class="absolute top-[20%] left-[30%] w-6 h-8 bg-secondary-container rounded-full lantern-glow animate-bob"></div>
+          <div class="absolute top-[35%] right-[25%] w-5 h-7 bg-secondary-container rounded-full lantern-glow animate-bob" style="animation-delay: 1s;"></div>
+          <div class="absolute top-[50%] left-[40%] w-4 h-6 bg-secondary-container rounded-full lantern-glow animate-bob" style="animation-delay: 2.5s;"></div>
+        </div>
+        <div class="relative z-20 text-center pointer-events-auto mt-[-10%]">
+          <h2 class="font-display-lg text-display-lg text-primary drop-shadow-lg">Memory Heart</h2>
+          <p class="font-label-md text-label-md text-secondary mt-2">Where every leaf holds a story</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full px-container-padding-mobile max-w-7xl -mt-16 relative z-30">
+        
+        <!-- Mood Check-in -->
+        <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float" style="animation-delay: 0.5s;">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">mood</span>
+            <h3 class="font-headline-md text-headline-md text-primary">How are you feeling?</h3>
+          </div>
+          <div class="grid grid-cols-3 gap-2 mb-4">
+            <button onclick="logMood('Happy')" class="p-2 border border-secondary-container rounded-lg hover:bg-secondary-container hover:text-on-secondary-container transition-colors font-display-lg text-4xl">😄</button>
+            <button onclick="logMood('Anxious')" class="p-2 border border-secondary-container rounded-lg hover:bg-secondary-container hover:text-on-secondary-container transition-colors font-display-lg text-4xl">😥</button>
+            <button onclick="logMood('Tired')" class="p-2 border border-secondary-container rounded-lg hover:bg-secondary-container hover:text-on-secondary-container transition-colors font-display-lg text-4xl">😴</button>
+            <button onclick="logMood('Sad')" class="p-2 border border-secondary-container rounded-lg hover:bg-secondary-container hover:text-on-secondary-container transition-colors font-display-lg text-4xl">😔</button>
+            <button onclick="logMood('Okay')" class="p-2 border border-secondary-container rounded-lg hover:bg-secondary-container hover:text-on-secondary-container transition-colors font-display-lg text-4xl">😐</button>
+            <button onclick="logMood('Angry')" class="p-2 border border-secondary-container rounded-lg hover:bg-secondary-container hover:text-on-secondary-container transition-colors font-display-lg text-4xl">😡</button>
+          </div>
+        </div>
+
+        <!-- Today's Tiny Wins (Checkbox List) -->
+        <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float md:col-span-2 lg:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+              <h3 class="font-headline-md text-headline-md text-primary">Today's Tiny Wins</h3>
+            </div>
+            <span id="wins-counter" class="text-xs font-bold text-secondary-container bg-primary-container px-3 py-1 rounded-full">0/12</span>
+          </div>
+          <p class="text-xs text-on-surface-variant mb-3">Check off the ones you did today! Every 5 wins blooms a flower 🌸</p>
+          <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar" id="wins-checkbox-list">
+            <p class="text-on-surface-variant italic text-sm text-center py-8">Loading your sparks...</p>
+          </div>
+          <div id="wins-congrats" class="hidden text-center py-4">
+            <p class="font-headline-md text-secondary italic">🎉 All done! Barnaby is SO proud!</p>
+          </div>
+        </div>
+        <!-- Flower animation overlay -->
+        <div id="flower-anim-layer" class="fixed inset-0 pointer-events-none z-[90]"></div>
+
+        <!-- Affirmation Cards -->
+        <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float" style="animation-delay: 1s;">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-secondary">favorite</span>
+              <h3 class="font-headline-md text-headline-md text-primary">Affirmations</h3>
+            </div>
+            <button onclick="refreshAffirmations()" class="material-symbols-outlined text-on-surface-variant hover:text-secondary transition-colors">refresh</button>
+          </div>
+          <div class="bg-surface-container-high/50 p-6 rounded-lg border border-outline/20 flex items-center justify-center min-h-[100px] text-center">
+            <p class="font-body-lg italic text-on-surface" id="affirmation-text">"You are doing your best, and that is enough."</p>
+          </div>
+        </div>
+
+        <!-- Let It Go Box -->
+        <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float lg:col-span-2" style="animation-delay: 1.5s;">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="material-symbols-outlined text-secondary">wind_power</span>
+            <h3 class="font-headline-md text-headline-md text-primary">Let It Go Box</h3>
+          </div>
+          <p class="font-body-md text-on-surface-variant mb-4 text-sm">Write down a frustration or worry, and release it to the wind.</p>
+          <textarea id="letItGoInput" rows="2" class="w-full bg-surface-container-high border border-outline/30 rounded-lg p-3 font-body-md focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-all mb-4 text-sm" placeholder="I'm worried about..."></textarea>
+          <div class="flex gap-4">
+            <button onclick="letItGo('shred')" class="px-4 py-2 border-2 border-secondary/50 rounded-lg text-secondary font-label-md hover:bg-secondary/10 transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-sm">delete</span> Shred It</button>
+            <button onclick="letItGo('float')" class="px-4 py-2 bg-secondary text-on-secondary rounded-lg font-label-md shadow-md hover:bg-secondary/90 transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-sm">air</span> Let It Float Away</button>
+          </div>
+        </div>
+
+        <!-- Emergency Happiness / Balloon Breathing -->
+        <div class="flex flex-col gap-6 justify-center">
+          <button onclick="triggerEmergencyHappiness()" class="wooden-sign px-6 py-4 rounded-xl text-center shadow-xl hover:-translate-y-1 transition-transform group flex items-center gap-4 justify-center">
+            <span class="material-symbols-outlined text-secondary-container text-3xl group-hover:animate-bounce">celebration</span>
+            <span class="font-headline-md text-secondary-container uppercase tracking-widest text-sm">Emergency Happiness</span>
+          </button>
+
+          <div class="parchment-card p-4 border border-outline-variant shadow-lg flex flex-col items-center">
+            <h3 class="font-label-md text-primary font-bold mb-4 uppercase tracking-widest">Breathing Bubble</h3>
+            <div id="breathing-circle" class="w-16 h-16 rounded-full bg-secondary-container/40 flex items-center justify-center border-4 border-secondary-container transition-all duration-[4000ms] ease-in-out cursor-pointer" onclick="toggleBreathing()">
+              <span class="material-symbols-outlined text-secondary text-2xl" id="breathing-icon">air</span>
+            </div>
+            <p id="breathing-text" class="text-xs text-on-surface-variant mt-4 font-bold uppercase tracking-wider text-center">Click to start</p>
+          </div>
+        </div>
+      </div>
+      <div class="mt-section-margin w-full max-w-4xl px-container-padding-mobile mb-12">
+        <div class="relative py-12 flex flex-wrap justify-center gap-12">
+          <div class="group cursor-pointer flex flex-col items-center" onclick="navTo('adventure-district')">
+            <div class="wooden-sign px-8 py-4 rounded-sm text-secondary-container flex flex-col items-center transition-all duration-300 group-hover:-rotate-3 group-hover:scale-105">
+              <span class="material-symbols-outlined mb-1">forest</span>
+              <span class="font-label-md text-label-md font-bold uppercase tracking-widest">Adventure Forest</span>
+            </div>
+            <div class="w-1 h-12 bg-primary-container"></div>
+            <div class="w-16 h-4 bg-primary/20 rounded-full blur-sm"></div>
+          </div>
+          <div class="group cursor-pointer flex flex-col items-center" onclick="navTo('memory-district')">
+            <div class="wooden-sign px-8 py-4 rounded-sm text-secondary-container flex flex-col items-center transition-all duration-300 group-hover:-rotate-1 group-hover:scale-105">
+              <span class="material-symbols-outlined mb-1">nature_people</span>
+              <span class="font-label-md text-label-md font-bold uppercase tracking-widest">Memory Grove</span>
+            </div>
+            <div class="w-1 h-12 bg-primary-container"></div>
+            <div class="w-16 h-4 bg-primary/20 rounded-full blur-sm"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- DISTRICT: ADVENTURE FOREST                 -->
+    <!-- ========================================== -->
+    <main id="adventure-district" class="district-section hidden-section relative z-10 flex-grow flex flex-col items-center justify-center pt-24 pb-32">
+      <div class="mb-12 wooden-sign-hover cursor-pointer group" onclick="navTo('hub-district')">
+        <div class="bg-primary px-8 py-4 rounded-lg shadow-xl relative border-b-4 border-on-primary-fixed-variant flex items-center gap-3">
+          <span class="material-symbols-outlined text-secondary-container">west</span>
+          <span class="font-headline-md text-headline-md text-secondary-container">Great Panda Tree</span>
+          <div class="absolute -top-6 left-1/4 w-1 h-6 bg-amber-900/40"></div>
+          <div class="absolute -top-6 right-1/4 w-1 h-6 bg-amber-900/40"></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-element-gap w-full max-w-6xl px-container-padding-mobile">
+        <div class="relative group cursor-pointer wooden-sign-hover" onclick="startDumplingsGame()">
+          <div class="absolute -inset-4 bg-secondary-container/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative overflow-hidden rounded-3xl border-4 border-primary-container bg-surface-container-low shadow-2xl h-[500px]">
+            <img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKL3YWE50yBtX-a_iz_NOi6OpBXfGSn3m_Zve7Dkk47IUf3QZbjZIvhETtDKDPvSospe616Ghn0JBbr1C1KVAfEwOFQXz9FGMIvZhFj0wmeKwdwlOnHXTuAUUdaApOuUOzHdXSgJp-ml41IE-ReC_D9RDK8Zw40B3N1HXg7UQABAL_WjOccbUl4GanMahp7BUfmQO6tHlA9ZuyGbaT8XNHIilBDOO869xSb-HsadeDYCn6q43cF9nHz3XwPi-o-bimkMcfhdZ4RQI"/>
+            <div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 p-8 w-full">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="firefly-mote" style="top: -20px; left: 10px;"></span>
+                <span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-md text-label-md">Play Mini-Game</span>
+              </div>
+              <h2 class="font-headline-lg text-headline-lg text-white mb-4">Panda's Lost Dumplings</h2>
+              <p class="text-on-primary-container font-body-md text-body-md leading-relaxed opacity-90">Help Barnaby collect dumplings in this cozy side-scrolling mini-game.</p>
+            </div>
+          </div>
+        </div>
+        <div class="relative group cursor-pointer wooden-sign-hover md:mt-12" onclick="startForestAdventure()">
+          <div class="absolute -inset-4 bg-tertiary-fixed-dim/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative overflow-hidden rounded-3xl border-4 border-tertiary-container bg-surface-container-low shadow-2xl h-[500px]">
+            <img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbiCD7WBSCl4fHceRgAUxMJQq0-VpZbBuDVsbQeVzM1cqmkZ27qppiZ53F65zYdH6nd9oXEP81RQVlYIwsNwtY5PPENxvxxfh7-oViCub0AsfJY4RmTAHmLJJAzrSP3XHJVaW1wfOMUEFLO496uy_lOi2ZfVehlcd0V3XSgksE4TVItwtXNAuUeI3Q9d2GMryxNMZdZB8Ria10GQaXwsYzrT-v1i0Rvic4H1olMaUJFRqsop4arO9xS0hbLMm-ZZaumY2bTOKGxio"/>
+            <div class="absolute inset-0 bg-gradient-to-t from-tertiary/90 via-tertiary/20 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 p-8 w-full">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full font-label-md text-label-md">Explore</span>
+              </div>
+              <h2 class="font-headline-lg text-headline-lg text-white mb-4">Panda Forest Adventure</h2>
+              <p class="text-on-tertiary-container font-body-md text-body-md leading-relaxed opacity-90">Wander peacefully through the hidden woods to find secrets and animal friends.</p>
             </div>
           </div>
         </div>
       </div>
-    </section>
 
-    <!-- TAB 3: REASONS & JOY -->
-    <section id="tab-joy" class="tab-content">
-      <!-- 10 Reasons You Are Amazing -->
-      <div class="reasons-section glass">
-        <div class="section-header">
-          <h3>10 Reasons You Are Amazing ✨</h3>
-          <button id="refreshReasonsBtn" class="primary-btn">✨ Refresh Reminders</button>
-        </div>
-        <p>Click on any card to flip it and reveal a reminder of your worth.</p>
-        <div id="reasonsLoading" class="loading-spinner hidden">
-          <span class="spinner">💖</span> Generating affirmations...
-        </div>
-        <div id="reasonsGrid" class="reasons-grid">
-          <!-- Flip cards generated dynamically -->
-        </div>
-      </div>
-
-      <!-- Emergency Happiness Button -->
-      <div class="emergency-section glass">
-        <h3>🚨 EMERGENCY HAPPINESS BUTTON 🚨</h3>
-        <p>Feeling down? Click the big button below for a sudden burst of cheer, a story, a joke, or a fun animation!</p>
-        
-        <div class="emergency-wrapper">
-          <button id="emergencyBtn" class="emergency-btn">✨ CLICK FOR HAPPINESS ✨</button>
-        </div>
-
-        <div id="emergencyLoading" class="loading-spinner hidden">
-          <span class="spinner">🎁</span> Packing a surprise for you...
-        </div>
-
-        <!-- Emergency Output Box -->
-        <div id="emergencyOutput" class="emergency-output glass hidden">
-          <div id="emergencyTextContent" class="emergency-text"></div>
-          <div id="emergencyImageContainer" class="emergency-image-container hidden">
-            <img id="emergencyImg" src="" alt="Emergency Happiness Surprise">
+      <!-- Comfort Garden Visualizer -->
+      <div class="w-full max-w-6xl mt-16 px-container-padding-mobile">
+        <div class="parchment-card p-8 border border-outline-variant shadow-lg relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-secondary-container/10 rounded-full blur-3xl"></div>
+          <h3 class="font-headline-md text-primary text-center mb-6 flex items-center justify-center gap-2"><span class="material-symbols-outlined text-secondary">local_florist</span> Your Comfort Garden</h3>
+          <div id="comfort-garden-area" class="h-48 w-full border-b-4 border-primary-container/20 flex items-end justify-around px-8 pb-4 text-4xl overflow-hidden relative">
+            <p class="absolute inset-0 flex items-center justify-center text-sm text-on-surface-variant italic opacity-60">Complete Tiny Wins to grow your garden...</p>
           </div>
         </div>
       </div>
-    </section>
-
-  </main>
-
-  <!-- Setup Modal (First-time visitor) -->
-  <div id="setupModal" class="modal-overlay hidden">
-    <div class="modal-content setup-modal glass">
-      <h3>🌸 Welcome to Comfort Corner 🌸</h3>
-      <p>Let's personalize your experience. Please share your names:</p>
       
-      <div class="form-group">
-        <label for="userNameInput">What is your name?</label>
-        <input type="text" id="userNameInput" placeholder="Enter your name..." value="Sunshine">
-      </div>
-
-      <div class="form-group">
-        <label for="pandaSetupNameInput">What would you like to name your Panda companion?</label>
-        <input type="text" id="pandaSetupNameInput" placeholder="Barnaby, Bubbles..." value="Barnaby">
-      </div>
-
-      <button id="saveSetupBtn" class="primary-btn">Enter Comfort Corner ✨</button>
-    </div>
-  </div>
-
-  <!-- Congratulations Modal -->
-  <div id="congratsModal" class="modal-overlay hidden">
-    <div class="modal-content congrats-modal glass">
-      <button id="closeCongratsBtn" class="close-modal">&times;</button>
-      <h3>🎉 CONGRATULATIONS! 🎉</h3>
-      <p class="congrats-sub">You checked off all 22 Tiny Wins today!</p>
-      
-      <div class="congrats-visual">
-        <img src="images/congrats.png" class="panda-avatar-img-large" alt="Congrats Panda">
-      </div>
-
-      <div id="congratsCustomMessage" class="congrats-message-box">
-        <div id="congratsLoading" class="loading-spinner">
-          <span class="spinner">✨</span> Writing a special note from Barnaby...
+      <!-- Canvas Game Modal -->
+      <div id="game-modal" class="fixed inset-0 z-[100] bg-background/90 backdrop-blur-md hidden items-center justify-center p-4">
+        <div class="bg-surface border-4 border-primary-container rounded-2xl shadow-2xl overflow-hidden relative max-w-4xl w-full">
+          <div class="absolute top-4 right-4 z-10">
+            <button onclick="closeGame()" class="material-symbols-outlined text-on-surface bg-surface-container hover:bg-surface-variant p-2 rounded-full transition-colors">close</button>
+          </div>
+          <div class="p-6 bg-primary-container text-center text-white">
+            <h2 id="game-title" class="font-headline-md">Game Title</h2>
+          </div>
+          <div class="w-full aspect-video bg-black flex items-center justify-center relative">
+            <canvas id="game-canvas" class="w-full h-full bg-surface-dim"></canvas>
+            <div id="game-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white p-8 text-center">
+              <h3 id="game-overlay-text" class="font-display-lg mb-4 text-secondary-container">Ready?</h3>
+              <button id="game-start-btn" class="px-8 py-3 bg-secondary text-on-secondary rounded-xl font-label-md hover:scale-105 transition-transform" onclick="startGameLoop()">Start Game</button>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <button id="congratsCloseBtn" class="primary-btn">Thank you, Barnaby ❤️</button>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- DISTRICT: MEMORY FIREFLIES                 -->
+    <!-- ========================================== -->
+    <main id="memory-district" class="district-section hidden-section relative z-30 min-h-screen flex flex-col items-center justify-center px-container-padding-mobile pt-24 pb-32">
+      <div class="relative group cursor-pointer floating-jar mb-12">
+        <div class="w-48 h-64 md:w-56 md:h-72 bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-[4rem] rounded-b-2xl jar-glow flex flex-col items-center justify-center p-6 relative">
+          <div class="absolute w-12 h-12 bg-secondary-container/60 blur-xl rounded-full top-1/4 animate-pulse"></div>
+          <div class="absolute w-16 h-16 bg-tertiary-fixed-dim/40 blur-2xl rounded-full bottom-1/4 animate-pulse delay-700"></div>
+          <span class="material-symbols-outlined text-secondary-container text-6xl mb-4" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+          <p class="font-label-md text-label-md text-secondary-fixed-dim text-center uppercase tracking-widest">Ancient Echoes</p>
+        </div>
+        <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 w-40 h-4 bg-secondary-container/20 blur-md rounded-full scale-y-50"></div>
+      </div>
+      <div class="text-center max-w-lg">
+        <h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-white mb-4">The Memory Fireflies Grove</h1>
+        <p class="font-body-lg text-body-lg text-tertiary-fixed-dim mb-10 leading-relaxed">
+            Watch your quiet moments drift among the trees. Each lantern holds a story shared by a traveler passing through.
+        </p>
+        
+        <input type="text" id="memoryInput" placeholder="A quiet thought..." class="w-full bg-surface-container-high border border-outline/30 rounded-lg px-4 py-2 font-body-md focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-all mb-4 text-primary" />
+
+        <button class="group relative px-10 py-5 bg-primary-container border-2 border-secondary-container/30 rounded-xl shadow-2xl transition-all hover:rotate-1 hover:scale-105 active:scale-95" onclick="releaseFirefly()">
+          <div class="absolute inset-0 wood-texture opacity-20 pointer-events-none"></div>
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-secondary-container text-2xl animate-pulse">flare</span>
+            <span class="font-headline-md text-headline-md text-secondary-container">Release a Memory</span>
+          </div>
+          <div class="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 shadow-[0_0_30px_rgba(254,177,93,0.4)]"></div>
+        </button>
+      </div>
+    </main>
+
+
+    <!-- ========================================== -->
+    <!-- MODALS FOR AI RESPONSES AND WINS           -->
+    <!-- ========================================== -->
+    
+    <!-- AI Message Modal -->
+    <div id="ai-modal" class="fixed inset-0 z-[100] bg-background/90 backdrop-blur-md hidden items-center justify-center p-4">
+      <div class="parchment-card p-8 border border-outline-variant shadow-2xl overflow-hidden relative max-w-2xl w-full flex flex-col items-center">
+        <button onclick="closeAiModal()" class="absolute top-4 right-4 material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">close</button>
+        <div id="ai-modal-loading" class="flex flex-col items-center py-12 hidden">
+          <span class="material-symbols-outlined text-secondary text-5xl animate-spin mb-4">progress_activity</span>
+          <p class="font-label-md text-on-surface-variant">Barnaby is thinking...</p>
+        </div>
+        <div id="ai-modal-content" class="w-full text-center hidden">
+          <img id="ai-modal-image" src="" alt="Barnaby" class="w-48 h-48 mx-auto object-cover rounded-full border-4 border-secondary-container mb-6 hidden shadow-lg" />
+          <h2 id="ai-modal-title" class="font-display-lg text-primary mb-4 italic">Hello!</h2>
+          <div id="ai-modal-body" class="font-body-lg text-on-surface-variant space-y-4 max-h-[50vh] overflow-y-auto px-4">
+            <!-- Content Injected via JS -->
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- Settings Modal (Edit Names) -->
-  <div id="settingsModal" class="modal-overlay hidden">
-    <div class="modal-content glass">
-      <button id="closeSettingsBtn" class="close-modal">&times;</button>
-      <h3>⚙️ Edit Settings</h3>
-      <p>Personalize your experience. Update your name and your companion panda's name below.</p>
-      
-      <div class="form-group">
-        <label for="settingsUserNameInput">Your Name:</label>
-        <input type="text" id="settingsUserNameInput" placeholder="Enter your name...">
-      </div>
-
-      <div class="form-group">
-        <label for="settingsPandaNameInput">Panda Companion's Name:</label>
-        <input type="text" id="settingsPandaNameInput" placeholder="Enter companion name...">
-      </div>
-
-      <div class="button-row">
-        <button id="saveSettingsBtn" class="primary-btn">Save Settings</button>
+    <!-- Tiny Wins Selector Modal -->
+    <div id="wins-modal" class="fixed inset-0 z-[100] bg-background/90 backdrop-blur-md hidden items-center justify-center p-4">
+      <div class="parchment-card p-8 border border-outline-variant shadow-2xl overflow-hidden relative max-w-xl w-full">
+        <button onclick="closeWinsModal()" class="absolute top-4 right-4 material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">close</button>
+        <h2 class="font-display-lg text-primary mb-2 text-center italic">Pick a Spark!</h2>
+        <p class="text-center font-body-md text-on-surface-variant mb-6">Which of these tiny wins did you achieve today?</p>
+        <div id="wins-selector-list" class="space-y-3 max-h-[60vh] overflow-y-auto px-2">
+          <!-- Populated via script.js -->
+        </div>
       </div>
     </div>
-  </div>
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-[100] bg-background/90 backdrop-blur-md hidden items-center justify-center p-4">
+      <div class="parchment-card p-8 border border-outline-variant shadow-2xl overflow-hidden relative max-w-md w-full">
+        <button onclick="toggleSettings()" class="absolute top-4 right-4 material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">close</button>
+        <h2 class="font-display-lg text-primary mb-6 text-center italic">⚙️ Sanctuary Settings</h2>
+        
+        <div class="space-y-4">
+          <!-- User Info -->
+          <div class="bg-surface-container-high/50 p-4 rounded-lg border border-outline/20">
+            <p class="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Traveler</p>
+            <p id="settings-username" class="font-headline-md text-primary">—</p>
+            <div class="flex gap-4 mt-2 text-xs text-on-surface-variant">
+              <span>🌳 Tree: <strong id="settings-tree" class="text-secondary">Sapling</strong></span>
+              <span>⭐ XP: <strong id="settings-xp" class="text-secondary">0</strong></span>
+            </div>
+          </div>
 
-  <!-- Toast Notification System -->
-  <div id="toastContainer" class="toast-container"></div>
+          <!-- API Keys Info -->
+          <div class="bg-surface-container-high/50 p-4 rounded-lg border border-outline/20">
+            <p class="text-xs text-on-surface-variant uppercase tracking-wider mb-2">AI Status</p>
+            <div id="settings-api-status" class="space-y-1 text-sm text-on-surface-variant">Checking...</div>
+          </div>
 
-  <!-- External JS File -->
+          <!-- Logout -->
+          <button onclick="logoutSanctuary()" class="w-full py-3 border-2 border-secondary/50 rounded-lg text-secondary font-label-md hover:bg-secondary/10 transition-colors flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-sm">logout</span> Leave Sanctuary
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- End SPA Container -->
+
+  <!-- Overlay for transition -->
+  <div class="fixed inset-0 bg-surface-bright opacity-0 pointer-events-none z-[100] transition-opacity duration-[2000ms]" id="flash-overlay"></div>
+
+  <!-- Global Bottom Nav (Hidden initially for Entrance) -->
+  <nav id="global-bottom-nav" class="hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 px-4 pb-2 bg-primary dark:bg-surface-container-highest shadow-[0_-4px_12px_rgba(0,0,0,0.1)] rounded-t-xl md:hidden">
+    <a class="flex flex-col items-center justify-center text-primary-fixed-dim opacity-70 hover:rotate-2 hover:brightness-110 transition-all" href="#" onclick="navTo('hub-district')">
+      <span class="material-symbols-outlined">nature_people</span>
+      <span class="font-label-md text-label-md">Tree</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-primary-fixed-dim opacity-70 hover:rotate-2 hover:brightness-110 transition-all" href="#" onclick="navTo('adventure-district')">
+      <span class="material-symbols-outlined">forest</span>
+      <span class="font-label-md text-label-md">Forest</span>
+    </a>
+    <a class="flex flex-col items-center justify-center text-primary-fixed-dim opacity-70 hover:rotate-2 hover:brightness-110 transition-all" href="#" onclick="navTo('memory-district')">
+      <span class="material-symbols-outlined">auto_awesome</span>
+      <span class="font-label-md text-label-md">Memory</span>
+    </a>
+  </nav>
+
+  <!-- Load JS Logic -->
   <script src="script.js"></script>
 </body>
 </html>

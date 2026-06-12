@@ -1,0 +1,110 @@
+{
+  "test_panda": {
+    "username": "test_panda",
+    "passwordHash": "008c70392e3abfbd0fa47bbc2ed96aa99bd49e159727fcba0f2e6abeb3a9d601",
+    "state": {
+      "userName": "test_panda",
+      "pandaName": "Barnaby",
+      "completedWins": [
+        0,
+        1,
+        2
+      ],
+      "winsDate": "",
+      "garden": [],
+      "reasons": [],
+      "reasonsDate": "",
+      "xp": 45,
+      "level": 2,
+      "treeStage": "Young Tree",
+      "memories": [],
+      "adventure": {
+        "zonesDiscovered": [
+          "Bamboo Forest"
+        ],
+        "itemsInteracted": []
+      },
+      "achievements": [],
+      "streak": 0,
+      "lastActiveDate": ""
+    }
+  },
+  "jii": {
+    "username": "jii",
+    "passwordHash": "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4",
+    "state": {
+      "userName": "jii",
+      "pandaName": "Barnaby",
+      "completedWins": [],
+      "winsDate": "Fri Jun 12 2026",
+      "garden": [],
+      "reasons": [],
+      "reasonsDate": "",
+      "xp": 63,
+      "level": 1,
+      "treeStage": "Sapling",
+      "memories": [],
+      "adventure": {
+        "zonesDiscovered": [
+          "Bamboo Forest"
+        ],
+        "itemsInteracted": [
+          "bamboo_shoot",
+          "sleeping_sparrow",
+          "hollow_trunk"
+        ]
+      },
+      "achievements": [],
+      "streak": 1,
+      "lastActiveDate": "Fri Jun 12 2026"
+    }
+  },
+  "jiii": {
+    "username": "jiii",
+    "passwordHash": "0f24276d1f0a0154495e9d85a9d1643186e91c5f679f78a9b60ec80b3cd8c97b",
+    "state": {
+      "userName": "jiii",
+      "pandaName": "Barnaby",
+      "completedWins": [],
+      "winsDate": "",
+      "garden": [],
+      "reasons": [],
+      "reasonsDate": "",
+      "xp": 100,
+      "level": 1,
+      "treeStage": "Young Tree",
+      "memories": [],
+      "adventure": {
+        "zonesDiscovered": [
+          "Bamboo Forest"
+        ],
+        "itemsInteracted": []
+      },
+      "achievements": [],
+      "streak": 0,
+      "lastActiveDate": "",
+      "moodHistory": [
+        {
+          "mood": "Happy",
+          "date": "2026-06-12T17:24:50.043Z"
+        },
+        {
+          "mood": "Anxious",
+          "date": "2026-06-12T17:24:53.917Z"
+        },
+        {
+          "mood": "Tired",
+          "date": "2026-06-12T17:29:50.165Z"
+        },
+        {
+          "mood": "Angry",
+          "date": "2026-06-12T17:29:58.920Z"
+        },
+        {
+          "mood": "Okay",
+          "date": "2026-06-12T17:50:45.701Z"
+        }
+      ]
+    }
+  }
+}

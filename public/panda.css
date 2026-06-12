@@ -75,10 +75,19 @@
   align-items: center;
   justify-content: center;
   transition: transform 0.4s ease, border-radius 0.4s ease;
+  transform-origin: center center;
+  animation: blinkEye 5s infinite ease-in-out;
 }
 
-.eye.left { transform: rotate(-15deg); }
-.eye.right { transform: rotate(15deg); }
+.eye.left {
+  --eye-rot: -15deg;
+  transform: rotate(var(--eye-rot));
+}
+
+.eye.right {
+  --eye-rot: 15deg;
+  transform: rotate(var(--eye-rot));
+}
 
 .pupil {
   width: 8px;
@@ -88,13 +97,12 @@
   position: absolute;
   top: 6px;
   left: 12px;
-  animation: eyeBlink 4s infinite linear;
   transition: all 0.4s ease;
 }
 
-@keyframes eyeBlink {
-  0%, 95%, 100% { transform: scaleY(1); }
-  97% { transform: scaleY(0); }
+@keyframes blinkEye {
+  0%, 92%, 100% { transform: rotate(var(--eye-rot)) scaleY(1); }
+  95% { transform: rotate(var(--eye-rot)) scaleY(0.12); }
 }
 
 /* Blush */
@@ -164,6 +172,12 @@
   border: 2px solid #2d2a2b;
   z-index: 2;
   transition: transform 0.3s ease, background 0.4s ease;
+  animation: bellyBreath 5s infinite ease-in-out;
+}
+
+@keyframes bellyBreath {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.06, 1.04); }
 }
 
 /* Arms */
@@ -215,6 +229,101 @@
   border-radius: 50%;
 }
 
+/* Blue Scarf */
+.panda-scarf {
+  position: absolute;
+  top: 102px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 18px;
+  background: linear-gradient(90deg, #1e3a8a, #3b82f6, #1e3a8a);
+  border: 2px solid #2d2a2b;
+  border-radius: 10px;
+  z-index: 3;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+.panda-scarf::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 14px;
+  width: 14px;
+  height: 30px;
+  background: #1e3a8a;
+  border: 2px solid #2d2a2b;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  transform: rotate(8deg);
+  transform-origin: top center;
+  animation: scarfFlutter 4s infinite ease-in-out alternate;
+}
+
+@keyframes scarfFlutter {
+  0% { transform: rotate(5deg); }
+  100% { transform: rotate(18deg); }
+}
+
+/* Held Lantern */
+.held-lantern {
+  position: absolute;
+  top: 96px;
+  right: -8px;
+  z-index: 4;
+  transform-origin: top center;
+  animation: lanternSway 3.5s infinite ease-in-out;
+}
+
+.lantern-wire {
+  width: 2px;
+  height: 16px;
+  background: #2d2a2b;
+  margin: 0 auto;
+}
+
+.lantern-cap {
+  width: 22px;
+  height: 6px;
+  background: #2d2a2b;
+  border-radius: 3px 3px 0 0;
+  margin: 0 auto;
+}
+
+.lantern-glass {
+  width: 18px;
+  height: 24px;
+  background: radial-gradient(circle at center, rgba(253, 224, 71, 0.9) 20%, rgba(245, 158, 11, 0.4) 80%);
+  border: 2.5px solid #2d2a2b;
+  border-radius: 5px;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.8), inset 0 0 6px rgba(255, 255, 255, 0.5);
+  position: relative;
+  margin: 0 auto;
+}
+
+.lantern-fire {
+  width: 6px;
+  height: 9px;
+  background: #f59e0b;
+  border-radius: 50% 50% 35% 35%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px #fbbf24;
+  animation: fireFlicker 0.15s infinite alternate ease-in-out;
+}
+
+@keyframes lanternSway {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+
+@keyframes fireFlicker {
+  0% { transform: translate(-50%, -50%) scale(0.85) rotate(-2deg); }
+  100% { transform: translate(-50%, -50%) scale(1.15) rotate(2deg); }
+}
+
 /* Breathing belly animations (4-7-8) */
 .breathe-in-belly {
   animation: bellyBreatheIn 4s forwards cubic-bezier(0.4, 0, 0.2, 1);
@@ -243,8 +352,8 @@
 /* SAD MOOD */
 .panda-avatar.sad .ear.left { transform: rotate(-22deg) translateY(4px); }
 .panda-avatar.sad .ear.right { transform: rotate(22deg) translateY(4px); }
-.panda-avatar.sad .eye.left { transform: rotate(-5deg); }
-.panda-avatar.sad .eye.right { transform: rotate(5deg); }
+.panda-avatar.sad .eye.left { --eye-rot: -5deg; }
+.panda-avatar.sad .eye.right { --eye-rot: 5deg; }
 .panda-avatar.sad .panda-blush { opacity: 0.2; }
 .panda-avatar.sad .panda-mouth {
   border-bottom: none;
@@ -256,8 +365,8 @@
 .panda-avatar.sad .arm.right { transform: rotate(-45deg); }
 
 /* STRESSED MOOD */
-.panda-avatar.stressed .eye.left { transform: rotate(-25deg) scaleY(0.7); }
-.panda-avatar.stressed .eye.right { transform: rotate(25deg) scaleY(0.7); }
+.panda-avatar.stressed .eye.left { --eye-rot: -25deg; }
+.panda-avatar.stressed .eye.right { --eye-rot: 25deg; }
 .panda-avatar.stressed .panda-blush { opacity: 0.1; }
 .panda-avatar.stressed .panda-mouth {
   width: 12px;
@@ -270,8 +379,8 @@
 .panda-avatar.stressed .arm.right { transform: rotate(-60deg); }
 
 /* SICK MOOD */
-.panda-avatar.sick .eye.left { border-radius: 20%; transform: rotate(0) scaleY(0.1); }
-.panda-avatar.sick .eye.right { border-radius: 20%; transform: rotate(0) scaleY(0.1); }
+.panda-avatar.sick .eye.left { border-radius: 20%; --eye-rot: 0deg; transform: rotate(0) scaleY(0.1); animation: none; }
+.panda-avatar.sick .eye.right { border-radius: 20%; --eye-rot: 0deg; transform: rotate(0) scaleY(0.1); animation: none; }
 .panda-avatar.sick .pupil { display: none; }
 .panda-avatar.sick .panda-blush { background: #cbd5e1; opacity: 0.8; }
 .panda-avatar.sick .panda-mouth {
@@ -288,8 +397,8 @@
 /* ANGRY MOOD */
 .panda-avatar.angry .ear.left { transform: rotate(15deg); }
 .panda-avatar.angry .ear.right { transform: rotate(-15deg); }
-.panda-avatar.angry .eye.left { transform: rotate(25deg) translateY(-2px); }
-.panda-avatar.angry .eye.right { transform: rotate(-25deg) translateY(-2px); }
+.panda-avatar.angry .eye.left { --eye-rot: 25deg; }
+.panda-avatar.angry .eye.right { --eye-rot: -25deg; }
 .panda-avatar.angry .panda-blush { background: #f87171; opacity: 0.9; }
 .panda-avatar.angry .panda-mouth {
   width: 18px;
@@ -303,8 +412,8 @@
 .panda-avatar.angry .arm.right { transform: rotate(35deg) translateY(-5px); }
 
 /* MOTIVATION / SUPERHERO MOOD */
-.panda-avatar.motivation .eye.left { transform: rotate(-15deg) scale(1.1); }
-.panda-avatar.motivation .eye.right { transform: rotate(15deg) scale(1.1); }
+.panda-avatar.motivation .eye.left { --eye-rot: -15deg; }
+.panda-avatar.motivation .eye.right { --eye-rot: 15deg; }
 .panda-avatar.motivation .panda-blush { background: #fbbf24; opacity: 0.8; }
 .panda-avatar.motivation .panda-mouth {
   width: 22px;
