@@ -401,8 +401,8 @@ async function apiCall(endpoint, payload, method = 'POST') {
 async function logMood(mood) {
     showToast(`Mood recorded: ${mood}. Barnaby is here for you.`);
     
-    // 1. Log progress XP
-    await apiCall('/api/progress/mood', { mood });
+    // 1. Log progress XP (Fire and forget, do not await!)
+    apiCall('/api/progress/mood', { mood }).catch(console.error);
     
     // 2. Fetch AI Comfort Messages
     showAiModalLoading();

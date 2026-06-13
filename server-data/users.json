@@ -113,5 +113,32 @@
       ],
       "winRefreshCount": 1
     }
+  },
+  "testuser": {
+    "username": "testuser",
+    "passwordHash": "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8",
+    "state": {
+      "userName": "testuser",
+      "pandaName": "Barnaby",
+      "completedWins": [],
+      "winsDate": "",
+      "garden": [],
+      "reasons": [],
+      "reasonsDate": "",
+      "xp": 0,
+      "level": 1,
+      "treeStage": "Sapling",
+      "memories": [],
+      "adventure": {
+        "zonesDiscovered": [
+          "Bamboo Forest"
+        ],
+        "itemsInteracted": []
+      },
+      "achievements": [],
+      "streak": 0,
+      "lastActiveDate": "",
+      "moodHistory": []
+    }
   }
 }
