@@ -18,22 +18,42 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const USERS_FILE_PATH = path.join(__dirname, 'server-data', 'users.json');
+const os = require('os');
+let USERS_FILE_PATH;
+try {
+  // Test if local __dirname is writable (local dev)
+  const testPath = path.join(__dirname, 'server-data', '.test');
+  if (!fs.existsSync(path.join(__dirname, 'server-data'))) {
+    fs.mkdirSync(path.join(__dirname, 'server-data'), { recursive: true });
+  }
+  fs.writeFileSync(testPath, 'test');
+  fs.unlinkSync(testPath);
+  USERS_FILE_PATH = path.join(__dirname, 'server-data', 'users.json');
+} catch (e) {
+  // Read-only fs (Netlify/Vercel/Lambda)
+  USERS_FILE_PATH = path.join(os.tmpdir(), 'users.json');
+}
+
+let memoryUsers = null;
 
 // --- Helper Functions for File DB ---
 function loadUsers() {
+  if (memoryUsers) return memoryUsers;
   try {
     if (fs.existsSync(USERS_FILE_PATH)) {
       const data = fs.readFileSync(USERS_FILE_PATH, 'utf8');
-      return JSON.parse(data || '{}');
+      memoryUsers = JSON.parse(data || '{}');
+      return memoryUsers;
     }
   } catch (err) {
     console.error("Error loading users database:", err);
   }
-  return {};
+  memoryUsers = {};
+  return memoryUsers;
 }
 
 function saveUsers(users) {
+  memoryUsers = users;
   try {
     fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(users, null, 2), 'utf8');
   } catch (err) {
