@@ -428,3 +428,20 @@
 @keyframes heroPulse {
   to { transform: rotate(145deg) scale(1.05); }
 }
+
+
+/* 10 Reasons 3D Flip Utilities */
+.perspective-1000 { 
+  perspective: 1000px; 
+}
+.preserve-3d { 
+  transform-style: preserve-3d; 
+  -webkit-transform-style: preserve-3d;
+}
+.backface-hidden { 
+  backface-visibility: hidden !important; 
+  -webkit-backface-visibility: hidden !important;
+}
+.rotate-y-180 { 
+  transform: rotateY(180deg) !important; 
+}

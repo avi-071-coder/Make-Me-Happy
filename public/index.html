@@ -262,6 +262,7 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full px-container-padding-mobile max-w-7xl -mt-16 relative z-30">
         
+        <!-- ROW 1 -->
         <!-- Mood Check-in -->
         <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float" style="animation-delay: 0.5s;">
           <div class="flex items-center gap-3 mb-4">
@@ -278,25 +279,21 @@
           </div>
         </div>
 
-        <!-- Today's Tiny Wins (Checkbox List) -->
-        <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float md:col-span-2 lg:col-span-2">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
-              <h3 class="font-headline-md text-headline-md text-primary">Today's Tiny Wins</h3>
+        <!-- Emergency Happiness / Balloon Breathing (Moved to Middle) -->
+        <div class="flex flex-col gap-6 justify-center animate-float" style="animation-delay: 0.7s;">
+          <button onclick="triggerEmergencyHappiness()" class="wooden-sign px-6 py-4 rounded-xl text-center shadow-xl hover:-translate-y-1 transition-transform group flex items-center gap-4 justify-center">
+            <span class="material-symbols-outlined text-secondary-container text-3xl group-hover:animate-bounce">celebration</span>
+            <span class="font-headline-md text-secondary-container uppercase tracking-widest text-sm">Emergency Happiness</span>
+          </button>
+
+          <div class="parchment-card p-4 border border-outline-variant shadow-lg flex flex-col items-center">
+            <h3 class="font-label-md text-primary font-bold mb-4 uppercase tracking-widest">Breathing Bubble</h3>
+            <div id="breathing-circle" class="w-16 h-16 rounded-full bg-secondary-container/40 flex items-center justify-center border-4 border-secondary-container transition-all duration-[4000ms] ease-in-out cursor-pointer" onclick="toggleBreathing()">
+              <span class="material-symbols-outlined text-secondary text-2xl" id="breathing-icon">air</span>
             </div>
-            <span id="wins-counter" class="text-xs font-bold text-secondary-container bg-primary-container px-3 py-1 rounded-full">0/12</span>
-          </div>
-          <p class="text-xs text-on-surface-variant mb-3">Check off the ones you did today! Every 5 wins blooms a flower 🌸</p>
-          <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar" id="wins-checkbox-list">
-            <p class="text-on-surface-variant italic text-sm text-center py-8">Loading your sparks...</p>
-          </div>
-          <div id="wins-congrats" class="hidden text-center py-4">
-            <p class="font-headline-md text-secondary italic">🎉 All done! Barnaby is SO proud!</p>
+            <p id="breathing-text" class="text-xs text-on-surface-variant mt-4 font-bold uppercase tracking-wider text-center">Click to start</p>
           </div>
         </div>
-        <!-- Flower animation overlay -->
-        <div id="flower-anim-layer" class="fixed inset-0 pointer-events-none z-[90]"></div>
 
         <!-- Affirmation Cards -->
         <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float" style="animation-delay: 1s;">
@@ -312,56 +309,69 @@
           </div>
         </div>
 
+        <!-- ROW 2 -->
         <!-- Let It Go Box -->
-        <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float lg:col-span-2" style="animation-delay: 1.5s;">
+        <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float" style="animation-delay: 1.2s;">
           <div class="flex items-center gap-3 mb-4">
             <span class="material-symbols-outlined text-secondary">wind_power</span>
             <h3 class="font-headline-md text-headline-md text-primary">Let It Go Box</h3>
           </div>
           <p class="font-body-md text-on-surface-variant mb-4 text-sm">Write down a frustration or worry, and release it to the wind.</p>
-          <textarea id="letItGoInput" rows="2" class="w-full bg-surface-container-high border border-outline/30 rounded-lg p-3 font-body-md focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-all mb-4 text-sm" placeholder="I'm worried about..."></textarea>
-          <div class="flex gap-4">
-            <button onclick="letItGo('shred')" class="px-4 py-2 border-2 border-secondary/50 rounded-lg text-secondary font-label-md hover:bg-secondary/10 transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-sm">delete</span> Shred It</button>
-            <button onclick="letItGo('float')" class="px-4 py-2 bg-secondary text-on-secondary rounded-lg font-label-md shadow-md hover:bg-secondary/90 transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-sm">air</span> Let It Float Away</button>
+          <textarea id="letItGoInput" rows="3" class="w-full bg-surface-container-high border border-outline/30 rounded-lg p-3 font-body-md focus:border-secondary-container focus:ring-1 focus:ring-secondary-container transition-all mb-4 text-sm resize-none" placeholder="I'm worried about..."></textarea>
+          <div class="flex flex-col gap-3">
+            <button onclick="letItGo('shred')" class="w-full py-2 border-2 border-secondary/50 rounded-lg text-secondary font-label-md hover:bg-secondary/10 transition-colors flex items-center justify-center gap-2"><span class="material-symbols-outlined text-sm">delete</span> Shred It</button>
+            <button onclick="letItGo('float')" class="w-full py-2 bg-secondary text-on-secondary rounded-lg font-label-md shadow-md hover:bg-secondary/90 transition-colors flex items-center justify-center gap-2"><span class="material-symbols-outlined text-sm">air</span> Let It Float Away</button>
           </div>
         </div>
 
-        <!-- Emergency Happiness / Balloon Breathing -->
-        <div class="flex flex-col gap-6 justify-center">
-          <button onclick="triggerEmergencyHappiness()" class="wooden-sign px-6 py-4 rounded-xl text-center shadow-xl hover:-translate-y-1 transition-transform group flex items-center gap-4 justify-center">
-            <span class="material-symbols-outlined text-secondary-container text-3xl group-hover:animate-bounce">celebration</span>
-            <span class="font-headline-md text-secondary-container uppercase tracking-widest text-sm">Emergency Happiness</span>
-          </button>
+        <!-- Today's Tiny Wins (Checkbox List) -->
+        <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float md:col-span-2 lg:col-span-2" style="animation-delay: 1.5s;">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+              <h3 class="font-headline-md text-headline-md text-primary">Today's Tiny Wins</h3>
+            </div>
+            <div class="flex items-center gap-4">
+              <button onclick="refreshTinyWins()" class="material-symbols-outlined text-on-surface-variant hover:text-secondary transition-colors" title="Get new Tiny Wins">refresh</button>
+              <span id="wins-counter" class="text-xs font-bold text-secondary-container bg-primary-container px-3 py-1 rounded-full">0/12</span>
+            </div>
+          </div>
+          <p class="text-xs text-on-surface-variant mb-3">Check off the ones you did today! Every 5 wins blooms a flower 🌸</p>
+          <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar" id="wins-checkbox-list">
+            <p class="text-on-surface-variant italic text-sm text-center py-8">Loading your sparks...</p>
+          </div>
+          <div id="wins-congrats" class="hidden text-center py-4">
+            <p class="font-headline-md text-secondary italic">🎉 All done! Barnaby is SO proud!</p>
+          </div>
+        </div>
+        <!-- Flower animation overlay -->
+        <div id="flower-anim-layer" class="fixed inset-0 pointer-events-none z-[90]"></div>
 
-          <div class="parchment-card p-4 border border-outline-variant shadow-lg flex flex-col items-center">
-            <h3 class="font-label-md text-primary font-bold mb-4 uppercase tracking-widest">Breathing Bubble</h3>
-            <div id="breathing-circle" class="w-16 h-16 rounded-full bg-secondary-container/40 flex items-center justify-center border-4 border-secondary-container transition-all duration-[4000ms] ease-in-out cursor-pointer" onclick="toggleBreathing()">
-              <span class="material-symbols-outlined text-secondary text-2xl" id="breathing-icon">air</span>
+        <!-- ROW 3 -->
+        <!-- 10 Reasons You Are Amazing (Envelopes) -->
+        <div class="parchment-card p-6 border border-outline-variant shadow-lg animate-float md:col-span-2 lg:col-span-3" style="animation-delay: 1.6s;">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-secondary text-3xl">mail</span>
+              <h3 class="font-headline-md text-headline-md text-primary">10 Reasons You Are Amazing</h3>
             </div>
-            <p id="breathing-text" class="text-xs text-on-surface-variant mt-4 font-bold uppercase tracking-wider text-center">Click to start</p>
+            <button onclick="fetchReasons()" class="wooden-sign px-4 py-2 rounded-lg text-sm shadow flex items-center gap-2 hover:-translate-y-1 transition-transform group">
+              <span class="material-symbols-outlined text-secondary-container text-sm group-hover:rotate-180 transition-transform duration-500">autorenew</span>
+              <span class="font-label-md text-secondary-container uppercase tracking-widest">Refresh All</span>
+            </button>
+          </div>
+          <p class="font-body-md text-on-surface-variant mb-6">Click on an envelope to read a special note.</p>
+          
+          <div id="reasons-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            <!-- Envelopes populated via JS -->
+            <div class="col-span-full text-center py-8 text-on-surface-variant font-body-md animate-pulse">
+              Barnaby is writing your letters...
+            </div>
           </div>
         </div>
+
       </div>
-      <div class="mt-section-margin w-full max-w-4xl px-container-padding-mobile mb-12">
-        <div class="relative py-12 flex flex-wrap justify-center gap-12">
-          <div class="group cursor-pointer flex flex-col items-center" onclick="navTo('adventure-district')">
-            <div class="wooden-sign px-8 py-4 rounded-sm text-secondary-container flex flex-col items-center transition-all duration-300 group-hover:-rotate-3 group-hover:scale-105">
-              <span class="material-symbols-outlined mb-1">forest</span>
-              <span class="font-label-md text-label-md font-bold uppercase tracking-widest">Adventure Forest</span>
-            </div>
-            <div class="w-1 h-12 bg-primary-container"></div>
-            <div class="w-16 h-4 bg-primary/20 rounded-full blur-sm"></div>
-          </div>
-          <div class="group cursor-pointer flex flex-col items-center" onclick="navTo('memory-district')">
-            <div class="wooden-sign px-8 py-4 rounded-sm text-secondary-container flex flex-col items-center transition-all duration-300 group-hover:-rotate-1 group-hover:scale-105">
-              <span class="material-symbols-outlined mb-1">nature_people</span>
-              <span class="font-label-md text-label-md font-bold uppercase tracking-widest">Memory Grove</span>
-            </div>
-            <div class="w-1 h-12 bg-primary-container"></div>
-            <div class="w-16 h-4 bg-primary/20 rounded-full blur-sm"></div>
-          </div>
-        </div>
-      </div>
+
     </main>
 
     <!-- ========================================== -->
@@ -376,36 +386,56 @@
           <div class="absolute -top-6 right-1/4 w-1 h-6 bg-amber-900/40"></div>
         </div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-element-gap w-full max-w-6xl px-container-padding-mobile">
-        <div class="relative group cursor-pointer wooden-sign-hover" onclick="startDumplingsGame()">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-element-gap w-full max-w-6xl px-container-padding-mobile">
+        
+        <!-- GAME 1: Dumpling Dash -->
+        <div class="relative group cursor-pointer wooden-sign-hover" onclick="startDumplingDash()">
           <div class="absolute -inset-4 bg-secondary-container/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <div class="relative overflow-hidden rounded-3xl border-4 border-primary-container bg-surface-container-low shadow-2xl h-[500px]">
-            <img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKL3YWE50yBtX-a_iz_NOi6OpBXfGSn3m_Zve7Dkk47IUf3QZbjZIvhETtDKDPvSospe616Ghn0JBbr1C1KVAfEwOFQXz9FGMIvZhFj0wmeKwdwlOnHXTuAUUdaApOuUOzHdXSgJp-ml41IE-ReC_D9RDK8Zw40B3N1HXg7UQABAL_WjOccbUl4GanMahp7BUfmQO6tHlA9ZuyGbaT8XNHIilBDOO869xSb-HsadeDYCn6q43cF9nHz3XwPi-o-bimkMcfhdZ4RQI"/>
-            <div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent"></div>
-            <div class="absolute bottom-0 left-0 p-8 w-full">
+          <div class="relative overflow-hidden rounded-3xl border-4 border-primary-container bg-surface-container-low shadow-2xl h-[400px]">
+            <img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="/assets/dumpling_dash_bg.png"/>
+            <div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/40 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 p-6 w-full">
               <div class="flex items-center gap-2 mb-2">
-                <span class="firefly-mote" style="top: -20px; left: 10px;"></span>
-                <span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-md text-label-md">Play Mini-Game</span>
+                <span class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-md text-label-sm">Arcade</span>
               </div>
-              <h2 class="font-headline-lg text-headline-lg text-white mb-4">Panda's Lost Dumplings</h2>
-              <p class="text-on-primary-container font-body-md text-body-md leading-relaxed opacity-90">Help Barnaby collect dumplings in this cozy side-scrolling mini-game.</p>
+              <h2 class="font-headline-md text-headline-md text-white mb-2">Dumpling Dash</h2>
+              <p class="text-on-primary-container font-body-sm text-body-sm leading-relaxed opacity-90">A relaxing twist on classic snake. Grow your dumpling trail!</p>
             </div>
           </div>
         </div>
-        <div class="relative group cursor-pointer wooden-sign-hover md:mt-12" onclick="startForestAdventure()">
+
+        <!-- GAME 2: Rainbow Painter -->
+        <div class="relative group cursor-pointer wooden-sign-hover" onclick="startRainbowPainter()">
           <div class="absolute -inset-4 bg-tertiary-fixed-dim/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <div class="relative overflow-hidden rounded-3xl border-4 border-tertiary-container bg-surface-container-low shadow-2xl h-[500px]">
-            <img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbiCD7WBSCl4fHceRgAUxMJQq0-VpZbBuDVsbQeVzM1cqmkZ27qppiZ53F65zYdH6nd9oXEP81RQVlYIwsNwtY5PPENxvxxfh7-oViCub0AsfJY4RmTAHmLJJAzrSP3XHJVaW1wfOMUEFLO496uy_lOi2ZfVehlcd0V3XSgksE4TVItwtXNAuUeI3Q9d2GMryxNMZdZB8Ria10GQaXwsYzrT-v1i0Rvic4H1olMaUJFRqsop4arO9xS0hbLMm-ZZaumY2bTOKGxio"/>
-            <div class="absolute inset-0 bg-gradient-to-t from-tertiary/90 via-tertiary/20 to-transparent"></div>
-            <div class="absolute bottom-0 left-0 p-8 w-full">
+          <div class="relative overflow-hidden rounded-3xl border-4 border-tertiary-container bg-surface-container-low shadow-2xl h-[400px]">
+            <img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="/assets/rainbow_painter_bg.png"/>
+            <div class="absolute inset-0 bg-gradient-to-t from-tertiary/90 via-tertiary/40 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 p-6 w-full">
               <div class="flex items-center gap-2 mb-2">
-                <span class="bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full font-label-md text-label-md">Explore</span>
+                <span class="bg-tertiary-fixed text-on-tertiary-fixed-variant px-3 py-1 rounded-full font-label-md text-label-sm">Creativity</span>
               </div>
-              <h2 class="font-headline-lg text-headline-lg text-white mb-4">Panda Forest Adventure</h2>
-              <p class="text-on-tertiary-container font-body-md text-body-md leading-relaxed opacity-90">Wander peacefully through the hidden woods to find secrets and animal friends.</p>
+              <h2 class="font-headline-md text-headline-md text-white mb-2">Rainbow Painter</h2>
+              <p class="text-on-tertiary-container font-body-sm text-body-sm leading-relaxed opacity-90">Restore color and magic to the sanctuary by painting.</p>
             </div>
           </div>
         </div>
+
+        <!-- GAME 3: Panda Cafe -->
+        <div class="relative group cursor-pointer wooden-sign-hover" onclick="startPandaCafe()">
+          <div class="absolute -inset-4 bg-error-container/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative overflow-hidden rounded-3xl border-4 border-[#ffb4ab] bg-surface-container-low shadow-2xl h-[400px]">
+            <img class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src="/assets/panda_cafe_bg.png"/>
+            <div class="absolute inset-0 bg-gradient-to-t from-[#93000a]/90 via-[#93000a]/40 to-transparent"></div>
+            <div class="absolute bottom-0 left-0 p-6 w-full">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="bg-[#ffdad6] text-[#410002] px-3 py-1 rounded-full font-label-md text-label-sm">Management</span>
+              </div>
+              <h2 class="font-headline-md text-headline-md text-white mb-2">Panda Café</h2>
+              <p class="text-[#ffdad6] font-body-sm text-body-sm leading-relaxed opacity-90">Serve tea and treats to your woodland friends.</p>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Comfort Garden Visualizer -->
@@ -523,7 +553,7 @@
           </div>
 
           <!-- API Keys Info -->
-          <div class="bg-surface-container-high/50 p-4 rounded-lg border border-outline/20">
+          <div class="bg-surface-container-high/50 p-4 rounded-lg border border-outline/20 hidden">
             <p class="text-xs text-on-surface-variant uppercase tracking-wider mb-2">AI Status</p>
             <div id="settings-api-status" class="space-y-1 text-sm text-on-surface-variant">Checking...</div>
           </div>
@@ -557,7 +587,8 @@
     </a>
   </nav>
 
-  <!-- Load JS Logic -->
+  <!-- Load Scripts -->
+  <script src="games.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

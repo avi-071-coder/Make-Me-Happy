@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const masterWinsPool = require('./server-data/wins_pool');
 const moodsPool = require('./server-data/moods_pool');
 const emergencyPool = require('./server-data/emergency_pool');
+const reasonsPool = require('./server-data/reasons_pool');
 
 dotenv.config();
 
@@ -45,8 +46,8 @@ function hashPassword(password) {
 }
 
 // Generate 12 deterministic unique wins per day per user
-function getDailyWinsForUser(username, dateStr) {
-  const seedStr = username.toLowerCase() + dateStr;
+function getDailyWinsForUser(username, dateStr, offset = 0) {
+  const seedStr = username.toLowerCase() + dateStr + offset;
   let hash = 0;
   for (let i = 0; i < seedStr.length; i++) {
     hash = (hash << 5) - hash + seedStr.charCodeAt(i);
@@ -181,8 +182,21 @@ app.post('/api/user/state', authenticateToken, (req, res) => {
 // Get personalized daily wins
 app.get('/api/user/daily-wins', authenticateToken, (req, res) => {
   const todayStr = new Date().toDateString();
-  const wins = getDailyWinsForUser(req.user.username, todayStr);
+  const offset = req.user.state.winRefreshCount || 0;
+  const wins = getDailyWinsForUser(req.user.username, todayStr, offset);
   res.json({ date: todayStr, wins: wins });
+});
+
+// Refresh daily wins
+app.post('/api/user/refresh-wins', authenticateToken, (req, res) => {
+  const users = loadUsers();
+  const user = users[req.token.toLowerCase()];
+  
+  user.state.completedWins = []; // clear completed list
+  user.state.winRefreshCount = (user.state.winRefreshCount || 0) + 1; // increase offset
+  saveUsers(users);
+
+  res.json({ success: true, state: user.state });
 });
 
 // --- Helper to get API keys from env or request headers ---
@@ -198,13 +212,29 @@ const getKeys = (req) => {
 // Gemini -> OpenRouter -> Hardcoded
 // ===========================
 
+// --- Utility for timeouts ---
+async function fetchWithTimeout(resource, options = {}) {
+  const { timeout = 8000 } = options;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(resource, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    throw error;
+  }
+}
+
 // 1. Gemini
 async function callGemini(prompt, apiKey) {
   if (!apiKey) throw new Error("No Gemini key");
   
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+  const response = await fetchWithTimeout(url, {
     method: 'POST',
+    timeout: 15000, // 15 seconds — Gemini is our only working provider, give it time
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
@@ -223,75 +253,12 @@ async function callGemini(prompt, apiKey) {
   return JSON.parse(text);
 }
 
-// 2. OpenRouter
-async function callOpenRouter(prompt, apiKey) {
-  if (!apiKey) throw new Error("No OpenRouter key");
 
-  const url = 'https://openrouter.ai/api/v1/chat/completions';
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': 'https://pandas-comfort-corner.app',
-      'X-Title': "Panda's Comfort Corner"
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.0-flash-001',
-      messages: [
-        { role: 'system', content: 'You are a wholesome, gentle digital panda. Always respond in valid JSON format only.' },
-        { role: 'user', content: prompt }
-      ],
-      response_format: { type: 'json_object' }
-    })
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`OpenRouter error: ${response.status} - ${errText}`);
-  }
-
-  const data = await response.json();
-  const text = data.choices?.[0]?.message?.content;
-  if (!text) throw new Error("No response from OpenRouter.");
-  return JSON.parse(text);
-}
-
-// 3. Hugging Face Image Generator
-async function callHuggingFace(prompt, hfKey) {
-  if (!hfKey) return null;
-  
-  const modelId = "stabilityai/stable-diffusion-xl-base-1.0";
-  const url = `https://api-inference.huggingface.co/models/${modelId}`;
-  const basePrompt = `${prompt}, in a 2D cute vector illustration style, round chibi panda, soft pastel colors (pink, lavender, mint green), thick clean outlines, kawaii aesthetic, solid white background`;
-  
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${hfKey}`
-      },
-      body: JSON.stringify({ inputs: basePrompt })
-    });
-
-    if (!response.ok) {
-      console.error(`Hugging Face error: ${response.status}`);
-      return null;
-    }
-
-    const buffer = await response.arrayBuffer();
-    const base64 = Buffer.from(buffer).toString('base64');
-    return `data:image/png;base64,${base64}`;
-  } catch (error) {
-    console.error("Hugging Face fetch failed:", error);
-    return null;
-  }
-}
-
-// Master AI call: tries Gemini -> OpenRouter -> returns null
+// Master AI call: Gemini is the only working provider right now.
+// OpenRouter = no credits (402), HF = DNS blocked on this network.
+// If you add credits to OpenRouter or switch networks, re-enable them below.
 async function callAI(prompt, keys) {
-  // Try Gemini first
+  // Try Gemini (confirmed working — ~2.5s avg response time)
   if (keys.geminiKey) {
     try {
       console.log("[AI] Trying Gemini...");
@@ -301,18 +268,8 @@ async function callAI(prompt, keys) {
     }
   }
 
-  // Try OpenRouter second
-  if (keys.openRouterKey) {
-    try {
-      console.log("[AI] Trying OpenRouter...");
-      return await callOpenRouter(prompt, keys.openRouterKey);
-    } catch (err) {
-      console.error("[AI] OpenRouter failed:", err.message);
-    }
-  }
-
-  // All AI failed
-  console.log("[AI] All providers failed. Using hardcoded fallback.");
+  // All AI failed — use hardcoded fallback
+  console.log("[AI] Gemini unavailable. Using hardcoded fallback.");
   return null;
 }
 
@@ -322,6 +279,17 @@ app.get('/api/check-keys', (req, res) => {
   const hasHF = !!process.env.HF_API_KEY && !process.env.HF_API_KEY.includes('YOUR_');
   const hasOpenRouter = !!process.env.OPENROUTER_API_KEY && !process.env.OPENROUTER_API_KEY.includes('YOUR_');
   res.json({ gemini: hasGemini, hf: hasHF, openRouter: hasOpenRouter });
+});
+
+// ===========================
+// GENERATE COLORING PAGE
+// Uses 19 pre-generated beautiful, high-quality vector-style AI coloring pages
+// ===========================
+app.post('/api/game/coloring-page', (req, res) => {
+  const numPages = 19;
+  const randIndex = Math.floor(Math.random() * numPages) + 1;
+  const imageUrl = `/assets/coloring_page_hq_${randIndex}.png`;
+  res.json({ imageUrl });
 });
 
 // ===========================
@@ -349,9 +317,6 @@ app.post('/api/mood-comfort', async (req, res) => {
     if (aiResult && aiResult.comfortMessages) {
       greeting = aiResult.greeting;
       comfortMessages = aiResult.comfortMessages;
-      if (aiResult.imagePrompt) {
-        imageUrl = await callHuggingFace(aiResult.imagePrompt, keys.hfKey);
-      }
     } else {
       // HARDCODED FALLBACK
       const moodKey = moodsPool[mood] ? mood : 'Okay';
@@ -453,7 +418,45 @@ app.post('/api/validate-release', async (req, res) => {
 });
 
 // ===========================
-// 5. EMERGENCY HAPPINESS
+// 6. 10 REASONS WHY YOU ARE AMAZING
+// ===========================
+app.post('/api/reasons-why', authenticateToken, async (req, res) => {
+  try {
+    const { userName, pandaName } = req.body;
+    const keys = getKeys(req);
+
+    const prompt = `You are a wholesome digital panda named ${pandaName}. The user ${userName || 'Sunshine'} wants to know why they are amazing. Generate exactly 10 short, deeply heartwarming, and comforting reasons why ${userName || 'Sunshine'} is amazing and loved. 
+    Response format: JSON object with:
+    - "reasons": An array of exactly 10 strings.`;
+
+    const aiResult = await callAI(prompt, keys);
+    
+    if (aiResult?.reasons && Array.isArray(aiResult.reasons) && aiResult.reasons.length >= 1) {
+      res.json({ reasons: aiResult.reasons.slice(0, 10) });
+    } else {
+      throw new Error("AI failed to return valid reasons array");
+    }
+  } catch (error) {
+    // HARDCODED FALLBACK
+    const pool = [...reasonsPool];
+    const reasons = [];
+    for (let i = 0; i < 10; i++) {
+      const idx = Math.floor(Math.random() * pool.length);
+      reasons.push(pool[idx]);
+      pool.splice(idx, 1);
+    }
+    res.json({ reasons });
+  }
+});
+
+app.get('/api/random-reason', (req, res) => {
+  const pool = [...reasonsPool];
+  const idx = Math.floor(Math.random() * pool.length);
+  res.json({ reason: pool[idx] });
+});
+
+// ===========================
+// 7. EMERGENCY HAPPINESS
 // ===========================
 app.post('/api/emergency-happiness', async (req, res) => {
   try {

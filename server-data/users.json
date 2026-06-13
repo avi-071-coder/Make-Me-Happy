@@ -67,12 +67,18 @@
       "pandaName": "Barnaby",
       "completedWins": [],
       "winsDate": "",
-      "garden": [],
+      "garden": [
+        "🌼",
+        "🌸",
+        "🌺",
+        "🌻",
+        "🌺"
+      ],
       "reasons": [],
       "reasonsDate": "",
-      "xp": 100,
+      "xp": 200,
       "level": 1,
-      "treeStage": "Young Tree",
+      "treeStage": "Blooming Tree",
       "memories": [],
       "adventure": {
         "zonesDiscovered": [
@@ -104,7 +110,8 @@
           "mood": "Okay",
           "date": "2026-06-12T17:50:45.701Z"
         }
-      ]
+      ],
+      "winRefreshCount": 1
     }
   }
 }

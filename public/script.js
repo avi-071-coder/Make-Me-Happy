@@ -130,6 +130,7 @@ async function enterSanctuary() {
         renderState();
         loadDailyWins();
         refreshAffirmations();
+        fetchReasons();
 
     } catch (err) {
         showToast(err.message);
@@ -214,6 +215,14 @@ function updateWinsCounter() {
     if (!counter || !userState) return;
     const done = userState.completedWins ? userState.completedWins.length : 0;
     counter.textContent = `${done}/12`;
+}
+
+async function refreshTinyWins() {
+    const res = await apiCall('/api/user/refresh-wins');
+    if (res && res.success) {
+        showToast("New Tiny Wins generated! Fresh start ✨");
+        loadDailyWins(); // reload the list
+    }
 }
 
 async function loadDailyWins() {
@@ -624,31 +633,62 @@ function initGlobalFireflies() {
     for(let i=0; i < 20; i++) setTimeout(createFirefly, Math.random() * 8000);
 }
 
-// === CANVAS GAMES ===
-let gameActive = false;
-let gameLoopId;
-let canvasCtx;
-let currentGame = '';
-let gameCanvas;
+// === SETTINGS ===
+async function toggleSettings() {
+    const modal = document.getElementById('settings-modal');
+    if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        if (userState) {
+            document.getElementById('settings-username').textContent = userState.userName || '—';
+            document.getElementById('settings-tree').textContent = userState.treeStage || 'Sapling';
+            document.getElementById('settings-xp').textContent = userState.xp || 0;
+        }
+        try {
+            const res = await fetch('/api/check-keys');
+            const data = await res.json();
+            const el = document.getElementById('settings-api-status');
+            el.innerHTML = `
+                <p>${data.gemini ? '✅' : '❌'} Gemini API</p>
+                <p>${data.openRouter ? '✅' : '❌'} OpenRouter API</p>
+                <p>${data.hf ? '✅' : '❌'} Hugging Face API</p>
+                <p class="text-xs mt-1 opacity-60">If all fail, hardcoded fallbacks activate.</p>`;
+        } catch(e) {}
+    } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
 
-// Game state
-let panda = {};
-let collectibles = [];
-let particles = [];
-let bgTrees = [];
-let gameTime = 0;
-let gameKeys = {};
+function logoutSanctuary() {
+    localStorage.removeItem('panda_token');
+    userToken = null;
+    userState = null;
+    toggleSettings();
+    navTo('entrance-district');
+    // Reset gates
+    const lg = document.getElementById('gate-left');
+    const rg = document.getElementById('gate-right');
+    if(lg) lg.classList.remove('gate-transition-left');
+    if(rg) rg.classList.remove('gate-transition-right');
+    const ui = document.getElementById('ui-container');
+    if(ui) ui.style.opacity = '1';
+    showToast("See you soon, traveler.");
+}
+
+// === CANVAS GAMES ===
+let currentGame = '';
 
 function startDumplingsGame() {
     document.getElementById('game-title').textContent = "Panda's Lost Dumplings";
-    document.getElementById('game-overlay-text').textContent = "Use Arrow Keys / WASD to collect 10 Dumplings!";
+    document.getElementById('game-overlay-text').textContent = "Use Arrow Keys / WASD to move, Space to Jump!";
     currentGame = 'dumplings';
     openGameModal();
 }
 
 function startForestAdventure() {
-    document.getElementById('game-title').textContent = "Forest Firefly Hunt";
-    document.getElementById('game-overlay-text').textContent = "Catch 15 glowing fireflies in the enchanted forest!";
+    document.getElementById('game-title').textContent = "Panda Forest Adventure";
+    document.getElementById('game-overlay-text').textContent = "Use WASD to explore, walk near animals and crystals to interact.";
     currentGame = 'adventure';
     openGameModal();
 }
@@ -657,369 +697,42 @@ function openGameModal() {
     const modal = document.getElementById('game-modal');
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-    gameCanvas = document.getElementById('game-canvas');
-    canvasCtx = gameCanvas.getContext('2d');
+    const gameCanvas = document.getElementById('game-canvas');
     gameCanvas.width = gameCanvas.clientWidth;
     gameCanvas.height = gameCanvas.clientHeight;
+    
     document.getElementById('game-overlay').style.display = 'flex';
     document.getElementById('game-start-btn').textContent = 'Play!';
     document.getElementById('game-start-btn').onclick = startGameLoop;
-    gameActive = false;
 }
 
 function closeGame() {
     document.getElementById('game-modal').classList.add('hidden');
     document.getElementById('game-modal').classList.remove('flex');
-    gameActive = false;
-    cancelAnimationFrame(gameLoopId);
-    window.removeEventListener('keydown', gameKeyDown);
-    window.removeEventListener('keyup', gameKeyUp);
-    if (panda.score > 0) {
-        apiCall('/api/progress/game', { gameId: currentGame, score: panda.score * 10 });
-        showToast(`Game Over! Earned ${panda.score * 10} XP.`);
+    
+    // Get score from the games.js engine
+    let score = 0;
+    if (typeof window.getActiveGameScore === 'function') {
+        score = window.getActiveGameScore();
+        window.haltGame();
+    }
+
+    if (score > 0) {
+        apiCall('/api/progress/game', { gameId: currentGame, score: score });
+        showToast(`Game Over! Earned ${score} XP.`);
     }
 }
-
-function gameKeyDown(e) { gameKeys[e.key.toLowerCase()] = true; e.preventDefault(); }
-function gameKeyUp(e) { gameKeys[e.key.toLowerCase()] = false; }
 
 function startGameLoop() {
     document.getElementById('game-overlay').style.display = 'none';
-    const W = gameCanvas.width, H = gameCanvas.height;
-    gameKeys = {};
-    particles = [];
-    gameTime = 0;
-
-    // Generate background trees
-    bgTrees = [];
-    for (let i = 0; i < 12; i++) {
-        bgTrees.push({
-            x: Math.random() * W,
-            h: 80 + Math.random() * 120,
-            w: 15 + Math.random() * 15,
-            shade: Math.random() * 0.3
-        });
-    }
-
-    const targetCount = currentGame === 'dumplings' ? 10 : 15;
-
-    panda = { x: W / 2, y: H - 60, size: 24, speed: 4.5, score: 0, targetScore: targetCount, vx: 0, vy: 0, facing: 1, bobTime: 0 };
-
-    collectibles = [];
-    for (let i = 0; i < targetCount; i++) {
-        collectibles.push({
-            x: 40 + Math.random() * (W - 80),
-            y: 40 + Math.random() * (H - 120),
-            collected: false,
-            bobOffset: Math.random() * Math.PI * 2,
-            glow: 0.5 + Math.random() * 0.5
-        });
-    }
-
-    gameActive = true;
-    window.addEventListener('keydown', gameKeyDown);
-    window.addEventListener('keyup', gameKeyUp);
-
-    function loop() {
-        if (!gameActive) return;
-        gameTime += 0.016;
-        update(W, H);
-        draw(W, H);
-        gameLoopId = requestAnimationFrame(loop);
-    }
-    loop();
-}
-
-function update(W, H) {
-    const accel = 0.6;
-    const friction = 0.85;
     
-    if (gameKeys['arrowleft'] || gameKeys['a']) { panda.vx -= accel; panda.facing = -1; }
-    if (gameKeys['arrowright'] || gameKeys['d']) { panda.vx += accel; panda.facing = 1; }
-    if (gameKeys['arrowup'] || gameKeys['w']) panda.vy -= accel;
-    if (gameKeys['arrowdown'] || gameKeys['s']) panda.vy += accel;
-    
-    panda.vx *= friction;
-    panda.vy *= friction;
-    panda.x += panda.vx;
-    panda.y += panda.vy;
-    panda.bobTime += 0.1;
-
-    // Bounds
-    panda.x = Math.max(panda.size, Math.min(W - panda.size, panda.x));
-    panda.y = Math.max(panda.size, Math.min(H - panda.size, panda.y));
-
-    // Collisions
-    collectibles.forEach(obj => {
-        if (!obj.collected) {
-            const dist = Math.hypot(panda.x - obj.x, panda.y - obj.y);
-            if (dist < panda.size + 16) {
-                obj.collected = true;
-                panda.score++;
-                // Burst particles
-                for (let i = 0; i < 10; i++) {
-                    particles.push({
-                        x: obj.x, y: obj.y,
-                        vx: (Math.random() - 0.5) * 6,
-                        vy: (Math.random() - 0.5) * 6,
-                        life: 1,
-                        color: currentGame === 'dumplings' ? '#feb15d' : '#8fd3c7',
-                        size: 3 + Math.random() * 4
-                    });
-                }
-            }
-        }
-    });
-
-    // Update particles
-    particles = particles.filter(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= 0.025;
-        p.size *= 0.97;
-        return p.life > 0;
-    });
-
-    // Win condition
-    if (panda.score >= panda.targetScore) {
-        gameActive = false;
-        document.getElementById('game-overlay').style.display = 'flex';
-        document.getElementById('game-overlay-text').textContent = `🎉 You collected them all! Score: ${panda.score}`;
-        document.getElementById('game-start-btn').textContent = 'Close & Collect XP';
-        document.getElementById('game-start-btn').onclick = closeGame;
+    if (currentGame === 'dumplings') {
+        if(window.startDumplingsEngine) window.startDumplingsEngine('game-canvas');
+    } else {
+        if(window.startForestEngine) window.startForestEngine('game-canvas');
     }
 }
 
-function draw(W, H) {
-    const ctx = canvasCtx;
-
-    // Sky gradient
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
-    skyGrad.addColorStop(0, '#0a1628');
-    skyGrad.addColorStop(0.5, '#14422d');
-    skyGrad.addColorStop(1, '#1a5c3a');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, W, H);
-
-    // Stars
-    for (let i = 0; i < 30; i++) {
-        const sx = (i * 137.5) % W;
-        const sy = (i * 97.3) % (H * 0.5);
-        const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(gameTime * 2 + i));
-        ctx.fillStyle = `rgba(255,255,200,${twinkle * 0.6})`;
-        ctx.beginPath();
-        ctx.arc(sx, sy, 1.5, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    // Moon
-    ctx.fillStyle = 'rgba(255,240,200,0.9)';
-    ctx.beginPath();
-    ctx.arc(W - 80, 60, 30, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = skyGrad;
-    ctx.beginPath();
-    ctx.arc(W - 70, 55, 28, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Background bamboo trees
-    bgTrees.forEach(t => {
-        ctx.fillStyle = `rgba(20,66,45,${0.4 + t.shade})`;
-        ctx.fillRect(t.x, H - t.h, t.w, t.h);
-        // Leaves
-        ctx.fillStyle = `rgba(30,90,50,${0.5 + t.shade})`;
-        ctx.beginPath();
-        ctx.ellipse(t.x + t.w / 2, H - t.h - 10, t.w * 1.5, 20, 0, 0, Math.PI * 2);
-        ctx.fill();
-    });
-
-    // Ground
-    const groundGrad = ctx.createLinearGradient(0, H - 40, 0, H);
-    groundGrad.addColorStop(0, '#1a5c3a');
-    groundGrad.addColorStop(1, '#0d3320');
-    ctx.fillStyle = groundGrad;
-    ctx.fillRect(0, H - 40, W, 40);
-    // Grass tufts
-    for (let i = 0; i < W; i += 12) {
-        ctx.fillStyle = `rgba(40,120,60,${0.5 + Math.random() * 0.3})`;
-        const gh = 5 + Math.random() * 10;
-        ctx.fillRect(i, H - 40 - gh, 3, gh);
-    }
-
-    // Draw collectibles
-    collectibles.forEach(obj => {
-        if (obj.collected) return;
-        const bob = Math.sin(gameTime * 3 + obj.bobOffset) * 4;
-        const glow = obj.glow * (0.8 + 0.2 * Math.sin(gameTime * 4 + obj.bobOffset));
-
-        if (currentGame === 'dumplings') {
-            // Dumpling glow
-            ctx.shadowColor = '#feb15d';
-            ctx.shadowBlur = 15 * glow;
-            // Dumpling body (steamed bun shape)
-            ctx.fillStyle = '#fff5e6';
-            ctx.beginPath();
-            ctx.ellipse(obj.x, obj.y + bob, 14, 11, 0, Math.PI, 0);
-            ctx.ellipse(obj.x, obj.y + bob, 14, 6, 0, 0, Math.PI);
-            ctx.fill();
-            // Pleats on top
-            ctx.strokeStyle = '#e8c98a';
-            ctx.lineWidth = 1.5;
-            for (let p = -2; p <= 2; p++) {
-                ctx.beginPath();
-                ctx.moveTo(obj.x + p * 4, obj.y + bob - 8);
-                ctx.lineTo(obj.x + p * 3, obj.y + bob - 3);
-                ctx.stroke();
-            }
-            ctx.shadowBlur = 0;
-        } else {
-            // Firefly
-            ctx.shadowColor = '#8fd3c7';
-            ctx.shadowBlur = 20 * glow;
-            ctx.fillStyle = `rgba(143,211,199,${glow})`;
-            ctx.beginPath();
-            ctx.arc(obj.x, obj.y + bob, 8, 0, Math.PI * 2);
-            ctx.fill();
-            // Inner bright core
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(obj.x, obj.y + bob, 3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-        }
-    });
-
-    // Draw particles
-    particles.forEach(p => {
-        ctx.globalAlpha = p.life;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-
-    // Draw Panda
-    drawPanda(ctx, panda.x, panda.y + Math.sin(panda.bobTime) * 2, panda.size, panda.facing);
-
-    // HUD
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 4;
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(10, 10, 180, 40);
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#fdf9ef';
-    ctx.font = 'bold 18px Literata, serif';
-    const itemName = currentGame === 'dumplings' ? '🥟 Dumplings' : '✨ Fireflies';
-    ctx.fillText(`${itemName}: ${panda.score}/${panda.targetScore}`, 20, 37);
-
-    // Progress bar
-    const progress = panda.score / panda.targetScore;
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.fillRect(10, 55, 180, 6);
-    ctx.fillStyle = currentGame === 'dumplings' ? '#feb15d' : '#8fd3c7';
-    ctx.fillRect(10, 55, 180 * progress, 6);
-}
-
-function drawPanda(ctx, x, y, size, facing) {
-    const s = size;
-    ctx.save();
-    ctx.translate(x, y);
-    if (facing === -1) ctx.scale(-1, 1);
-
-    // Body
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.ellipse(0, 6, s * 0.8, s * 0.9, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    // Head
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(0, -s * 0.5, s * 0.75, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    // Ears
-    ctx.fillStyle = '#1c1c16';
-    ctx.beginPath();
-    ctx.arc(-s * 0.55, -s * 1.0, s * 0.3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(s * 0.55, -s * 1.0, s * 0.3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Eye patches
-    ctx.fillStyle = '#1c1c16';
-    ctx.beginPath();
-    ctx.ellipse(-s * 0.25, -s * 0.55, s * 0.22, s * 0.18, -0.2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(s * 0.25, -s * 0.55, s * 0.22, s * 0.18, 0.2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Eyes (white dots)
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(-s * 0.22, -s * 0.55, s * 0.08, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(s * 0.22, -s * 0.55, s * 0.08, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Eye pupils
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(-s * 0.20, -s * 0.53, s * 0.04, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(s * 0.24, -s * 0.53, s * 0.04, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Nose
-    ctx.fillStyle = '#333';
-    ctx.beginPath();
-    ctx.ellipse(0, -s * 0.35, s * 0.08, s * 0.05, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Smile
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.arc(0, -s * 0.3, s * 0.15, 0.2, Math.PI - 0.2);
-    ctx.stroke();
-
-    // Arms (black)
-    ctx.fillStyle = '#1c1c16';
-    ctx.beginPath();
-    ctx.ellipse(-s * 0.7, 4, s * 0.25, s * 0.5, 0.3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(s * 0.7, 4, s * 0.25, s * 0.5, -0.3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Feet
-    ctx.beginPath();
-    ctx.ellipse(-s * 0.3, s * 0.8, s * 0.25, s * 0.15, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(s * 0.3, s * 0.8, s * 0.25, s * 0.15, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Blush
-    ctx.fillStyle = 'rgba(255,180,180,0.4)';
-    ctx.beginPath();
-    ctx.ellipse(-s * 0.4, -s * 0.35, s * 0.12, s * 0.07, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(s * 0.4, -s * 0.35, s * 0.12, s * 0.07, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-}
 
 // === WEBGL SHADER: BACKGROUND AMBIENCE ===
 function initShader() {
@@ -1133,3 +846,126 @@ function initShader() {
     
     render(0);
 }
+
+// === 10 REASONS YOU ARE AMAZING ===
+async function fetchReasons() {
+    const container = document.getElementById('reasons-container');
+    if (!container) return;
+    
+    // Show loading state
+    container.innerHTML = '<div class="col-span-full text-center py-8 text-on-surface-variant font-body-md animate-pulse">Barnaby is wrapping your gifts...</div>';
+
+    try {
+        const res = await fetch('/api/reasons-why', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userToken || ''}`
+            },
+            body: JSON.stringify({
+                userName: userState?.username || 'Friend',
+                pandaName: userState?.pandaName || 'Barnaby'
+            })
+        });
+        const data = await res.json();
+        
+        if (data.reasons && data.reasons.length > 0) {
+            renderReasons(data.reasons);
+        } else {
+            container.innerHTML = '<div class="col-span-full text-center text-error">Failed to fetch reasons. Please try again!</div>';
+        }
+    } catch (err) {
+        console.error("Error fetching reasons:", err);
+        container.innerHTML = '<div class="col-span-full text-center text-error">Failed to fetch reasons. Please try again!</div>';
+    }
+}
+
+function renderReasons(reasons) {
+    const container = document.getElementById('reasons-container');
+    container.innerHTML = '';
+    
+    reasons.forEach((reason, index) => {
+        const box = document.createElement('div');
+        // Give enough height for the letter to slide up
+        box.className = 'envelope-wrapper relative w-full h-48 cursor-pointer group flex items-end justify-center';
+        
+        box.innerHTML = `
+            <div class="envelope-body relative w-full h-32 bg-secondary-container rounded-b-md shadow-md z-30 transition-transform hover:-translate-y-1">
+                <!-- Back of envelope (inside) -->
+                <div class="absolute inset-0 bg-primary-container rounded-b-md"></div>
+                
+                <!-- The Letter -->
+                <div class="letter absolute bottom-2 left-[5%] w-[90%] h-28 bg-surface border border-outline shadow-lg z-20 p-3 flex items-center justify-center text-center transition-all duration-700 ease-in-out">
+                    <p class="font-body-md text-on-surface-variant text-[11px] leading-tight italic overflow-y-auto custom-scrollbar h-full flex items-center">"${reason}"</p>
+                </div>
+                
+                <!-- Envelope Flap (Top) -->
+                <div class="flap absolute top-0 left-0 w-full h-16 bg-secondary origin-top transition-transform duration-500 ease-in-out z-40 rounded-t-sm" style="clip-path: polygon(0 0, 100% 0, 50% 100%);"></div>
+                
+                <!-- Envelope Front (Bottom pocket) -->
+                <div class="envelope-front absolute bottom-0 left-0 w-full h-32 bg-secondary-container z-40 rounded-b-md pointer-events-none" style="clip-path: polygon(0 0, 50% 45%, 100% 0, 100% 100%, 0 100%);">
+                    <div class="absolute bottom-4 w-full flex justify-center">
+                        <span class="material-symbols-outlined text-on-secondary-container opacity-50">mail</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        let isOpen = false;
+        
+        box.addEventListener('click', async () => {
+            const letter = box.querySelector('.letter');
+            const flap = box.querySelector('.flap');
+            const front = box.querySelector('.envelope-front');
+            
+            if (!isOpen) {
+                // Open envelope
+                isOpen = true;
+                // Open flap
+                flap.style.transform = 'rotateX(180deg)';
+                flap.style.zIndex = '10'; // drop behind letter
+                
+                // Slide letter up and bring to front after flap opens slightly
+                setTimeout(() => {
+                    letter.style.transform = 'translateY(-100%)';
+                    letter.style.zIndex = '50';
+                    front.style.zIndex = '10'; // drop front behind letter so text is fully readable
+                }, 200);
+                
+                const rect = box.getBoundingClientRect();
+                if (typeof createFirefly === 'function') {
+                    for(let i=0; i<3; i++) setTimeout(createFirefly, i*200);
+                }
+            } else {
+                // Close envelope
+                isOpen = false;
+                // Slide letter down
+                letter.style.transform = 'translateY(0)';
+                letter.style.zIndex = '20';
+                front.style.zIndex = '40';
+                
+                // Close flap after letter is inside
+                setTimeout(() => {
+                    flap.style.zIndex = '40';
+                    flap.style.transform = 'rotateX(0deg)';
+                }, 400);
+                
+                // Fetch a new reason while closing
+                try {
+                    const res = await fetch('/api/random-reason');
+                    const data = await res.json();
+                    if (data.reason) {
+                        setTimeout(() => {
+                            box.querySelector('p').textContent = '"' + data.reason + '"';
+                        }, 600);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch new reason", e);
+                }
+            }
+        });
+        
+        container.appendChild(box);
+    });
+}
+
