@@ -9,10 +9,83 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Auto login if token exists
     if (userToken) {
-        // Skip entrance animation if already logged in? 
-        // For now, let the user click "Enter" anyway, but we will auto-auth.
+        checkAutoLogin();
     }
 });
+
+async function checkAutoLogin() {
+    const savedStateStr = localStorage.getItem('panda_state');
+    if (savedStateStr) {
+        try {
+            userState = JSON.parse(savedStateStr);
+        } catch (e) {
+            console.error("Failed to parse saved panda_state", e);
+        }
+    }
+
+    try {
+        const response = await fetch('/api/user/state', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${userToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error("Token verification failed");
+        }
+
+        let serverState = await response.json();
+        
+        // If the server state has less XP than client, or is a default blank state,
+        // and the client has progress saved, sync the client state back to the server.
+        if (userState && userState.xp > serverState.xp) {
+            const syncRes = await fetch('/api/user/state', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userToken}`
+                },
+                body: JSON.stringify(userState)
+            });
+            if (syncRes.ok) {
+                const syncData = await syncRes.json();
+                if (syncData.state) {
+                    userState = syncData.state;
+                    localStorage.setItem('panda_state', JSON.stringify(userState));
+                }
+            }
+        } else {
+            userState = serverState;
+            localStorage.setItem('panda_state', JSON.stringify(userState));
+        }
+
+        renderState();
+        loadDailyWins();
+        refreshAffirmations();
+        fetchReasons();
+
+        // Navigate directly to the hub
+        navTo('hub-district');
+        
+        // Instantly open gates so they don't block the UI
+        const leftGate = document.getElementById('gate-left');
+        const rightGate = document.getElementById('gate-right');
+        const uiContainer = document.getElementById('ui-container');
+        if (uiContainer) uiContainer.style.opacity = '0';
+        if (leftGate) leftGate.classList.add('gate-transition-left');
+        if (rightGate) rightGate.classList.add('gate-transition-right');
+        
+        showToast(`Welcome back, ${userState.userName || 'Traveler'}.`);
+    } catch (err) {
+        console.error("Auto-login failed:", err);
+        // Clear invalid token/state
+        localStorage.removeItem('panda_token');
+        localStorage.removeItem('panda_state');
+        userToken = null;
+        userState = null;
+    }
+}
 
 // === SPA ROUTING ===
 function navTo(districtId) {
@@ -126,6 +199,7 @@ async function enterSanctuary() {
         userToken = data.token;
         userState = data.state;
         localStorage.setItem('panda_token', userToken);
+        localStorage.setItem('panda_state', JSON.stringify(userState));
         
         renderState();
         loadDailyWins();
@@ -388,6 +462,7 @@ async function apiCall(endpoint, payload, method = 'POST') {
         const data = await res.json();
         if (data.state) {
             userState = data.state;
+            localStorage.setItem('panda_state', JSON.stringify(userState));
             renderState();
         }
         return data;
@@ -662,6 +737,7 @@ async function toggleSettings() {
 
 function logoutSanctuary() {
     localStorage.removeItem('panda_token');
+    localStorage.removeItem('panda_state');
     userToken = null;
     userState = null;
     toggleSettings();
@@ -863,7 +939,7 @@ async function fetchReasons() {
                 'Authorization': `Bearer ${userToken || ''}`
             },
             body: JSON.stringify({
-                userName: userState?.username || 'Friend',
+                userName: userState?.userName || 'Friend',
                 pandaName: userState?.pandaName || 'Barnaby'
             })
         });

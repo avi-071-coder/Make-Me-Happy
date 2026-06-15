@@ -177,9 +177,20 @@ app.post('/api/login', (req, res) => {
 
   const users = loadUsers();
   const usernameKey = username.toLowerCase();
-  const user = users[usernameKey];
+  let user = users[usernameKey];
 
-  if (!user || user.passwordHash !== hashPassword(password)) {
+  if (!user) {
+    // NETLIFY SERVERLESS FIX: If database was wiped/cold-started and user doesn't exist,
+    // we auto-create/re-register the user with the provided credentials.
+    const state = defaultState(username);
+    users[usernameKey] = {
+      username: username,
+      passwordHash: hashPassword(password),
+      state: state
+    };
+    saveUsers(users);
+    user = users[usernameKey];
+  } else if (user.passwordHash !== hashPassword(password)) {
     return res.status(400).json({ error: "Invalid username or password." });
   }
 
@@ -262,7 +273,7 @@ async function fetchWithTimeout(resource, options = {}) {
 async function callGemini(prompt, apiKey) {
   if (!apiKey) throw new Error("No Gemini key");
   
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b-latest:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
   const response = await fetchWithTimeout(url, {
     method: 'POST',
     timeout: 15000, // 15 seconds — Gemini is our only working provider, give it time
