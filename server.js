@@ -35,9 +35,34 @@ try {
 }
 
 let memoryUsers = null;
+let blobStore = null;
 
-// --- Helper Functions for File DB ---
-function loadUsers() {
+async function getBlobStore() {
+  if (blobStore) return blobStore;
+  if (process.env.NETLIFY || process.env.NETLIFY_IMAGES_CDN_DOMAIN || process.env.SITE_ID) {
+    try {
+      const { getStore } = require('@netlify/blobs');
+      blobStore = getStore('comfort-corner-db');
+      return blobStore;
+    } catch (e) {
+      console.warn("Netlify Blobs not available, falling back to local file database:", e.message);
+    }
+  }
+  return null;
+}
+
+async function loadUsers() {
+  const store = await getBlobStore();
+  if (store) {
+    try {
+      const data = await store.getJSON('users_db');
+      memoryUsers = data || {};
+      return memoryUsers;
+    } catch (err) {
+      console.error("Error loading users from Netlify Blobs:", err);
+    }
+  }
+
   if (memoryUsers) return memoryUsers;
   try {
     if (fs.existsSync(USERS_FILE_PATH)) {
@@ -52,8 +77,18 @@ function loadUsers() {
   return memoryUsers;
 }
 
-function saveUsers(users) {
+async function saveUsers(users) {
   memoryUsers = users;
+  const store = await getBlobStore();
+  if (store) {
+    try {
+      await store.setJSON('users_db', users);
+      return;
+    } catch (err) {
+      console.error("Error saving users to Netlify Blobs:", err);
+    }
+  }
+
   try {
     fs.writeFileSync(USERS_FILE_PATH, JSON.stringify(users, null, 2), 'utf8');
   } catch (err) {
@@ -108,13 +143,13 @@ const defaultState = (username) => ({
 });
 
 // Token Auth Middleware
-function authenticateToken(req, res, next) {
+async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer <username>
   if (!token) {
     return res.status(401).json({ error: "Unauthorized access. Please log in." });
   }
-  const users = loadUsers();
+  const users = await loadUsers();
   const tokenKey = token.toLowerCase();
   
   if (!users[tokenKey]) {
@@ -125,7 +160,7 @@ function authenticateToken(req, res, next) {
       passwordHash: hashPassword("dummy"), // dummy password
       state: defaultState(token)
     };
-    saveUsers(users);
+    await saveUsers(users);
   }
   
   req.user = users[tokenKey];
@@ -134,7 +169,7 @@ function authenticateToken(req, res, next) {
 }
 
 // --- Auth Endpoints ---
-app.post('/api/signup', (req, res) => {
+app.post('/api/signup', async (req, res) => {
   const { username, password, confirmPassword } = req.body;
   if (!username || !password || !confirmPassword) {
     return res.status(400).json({ error: "All fields are required." });
@@ -146,7 +181,7 @@ app.post('/api/signup', (req, res) => {
     return res.status(400).json({ error: "Username must be at least 3 characters long." });
   }
 
-  const users = loadUsers();
+  const users = await loadUsers();
   const usernameKey = username.toLowerCase();
   if (users[usernameKey]) {
     return res.status(400).json({ error: "Username already exists." });
@@ -160,7 +195,7 @@ app.post('/api/signup', (req, res) => {
     state: state
   };
 
-  saveUsers(users);
+  await saveUsers(users);
 
   res.json({
     message: "Registration successful!",
@@ -169,13 +204,13 @@ app.post('/api/signup', (req, res) => {
   });
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: "All fields are required." });
   }
 
-  const users = loadUsers();
+  const users = await loadUsers();
   const usernameKey = username.toLowerCase();
   let user = users[usernameKey];
 
@@ -188,7 +223,7 @@ app.post('/api/login', (req, res) => {
       passwordHash: hashPassword(password),
       state: state
     };
-    saveUsers(users);
+    await saveUsers(users);
     user = users[usernameKey];
   } else if (user.passwordHash !== hashPassword(password)) {
     return res.status(400).json({ error: "Invalid username or password." });
@@ -206,8 +241,8 @@ app.get('/api/user/state', authenticateToken, (req, res) => {
   res.json(req.user.state);
 });
 
-app.post('/api/user/state', authenticateToken, (req, res) => {
-  const users = loadUsers();
+app.post('/api/user/state', authenticateToken, async (req, res) => {
+  const users = await loadUsers();
   const usernameKey = req.token.toLowerCase();
   
   if (users[usernameKey]) {
@@ -215,7 +250,7 @@ app.post('/api/user/state', authenticateToken, (req, res) => {
       ...users[usernameKey].state,
       ...req.body
     };
-    saveUsers(users);
+    await saveUsers(users);
     return res.json({ success: true, state: users[usernameKey].state });
   }
   res.status(400).json({ error: "User not found." });
@@ -230,13 +265,13 @@ app.get('/api/user/daily-wins', authenticateToken, (req, res) => {
 });
 
 // Refresh daily wins
-app.post('/api/user/refresh-wins', authenticateToken, (req, res) => {
-  const users = loadUsers();
+app.post('/api/user/refresh-wins', authenticateToken, async (req, res) => {
+  const users = await loadUsers();
   const user = users[req.token.toLowerCase()];
   
   user.state.completedWins = []; // clear completed list
   user.state.winRefreshCount = (user.state.winRefreshCount || 0) + 1; // increase offset
-  saveUsers(users);
+  await saveUsers(users);
 
   res.json({ success: true, state: user.state });
 });
@@ -545,9 +580,9 @@ function getTreeStage(xp) {
   return "Sapling";
 }
 
-app.post('/api/progress/win', authenticateToken, (req, res) => {
+app.post('/api/progress/win', authenticateToken, async (req, res) => {
   const { winText } = req.body;
-  const users = loadUsers();
+  const users = await loadUsers();
   const user = users[req.token.toLowerCase()];
   
   if (!user.state.completedWins.includes(winText)) {
@@ -559,7 +594,7 @@ app.post('/api/progress/win', authenticateToken, (req, res) => {
     const randomFlower = flowers[Math.floor(Math.random() * flowers.length)];
     user.state.garden.push(randomFlower);
     
-    saveUsers(users);
+    await saveUsers(users);
   }
   
   // Return flower bloom status
@@ -568,9 +603,9 @@ app.post('/api/progress/win', authenticateToken, (req, res) => {
   res.json({ success: true, state: user.state, shouldBloom, totalWins });
 });
 
-app.post('/api/progress/memory', authenticateToken, (req, res) => {
+app.post('/api/progress/memory', authenticateToken, async (req, res) => {
   const { memoryText } = req.body;
-  const users = loadUsers();
+  const users = await loadUsers();
   const user = users[req.token.toLowerCase()];
   
   user.state.memories.push({
@@ -581,13 +616,13 @@ app.post('/api/progress/memory', authenticateToken, (req, res) => {
   user.state.xp += 20;
   user.state.treeStage = getTreeStage(user.state.xp);
   
-  saveUsers(users);
+  await saveUsers(users);
   res.json({ success: true, state: user.state });
 });
 
-app.post('/api/progress/mood', authenticateToken, (req, res) => {
+app.post('/api/progress/mood', authenticateToken, async (req, res) => {
   const { mood } = req.body;
-  const users = loadUsers();
+  const users = await loadUsers();
   const user = users[req.token.toLowerCase()];
   
   if (!user.state.moodHistory) user.state.moodHistory = [];
@@ -599,20 +634,20 @@ app.post('/api/progress/mood', authenticateToken, (req, res) => {
   user.state.xp += 5;
   user.state.treeStage = getTreeStage(user.state.xp);
   
-  saveUsers(users);
+  await saveUsers(users);
   res.json({ success: true, state: user.state });
 });
 
-app.post('/api/progress/game', authenticateToken, (req, res) => {
+app.post('/api/progress/game', authenticateToken, async (req, res) => {
   const { gameId, score } = req.body;
-  const users = loadUsers();
+  const users = await loadUsers();
   const user = users[req.token.toLowerCase()];
   
   const xpGained = Math.floor(score / 10);
   user.state.xp += xpGained;
   user.state.treeStage = getTreeStage(user.state.xp);
   
-  saveUsers(users);
+  await saveUsers(users);
   res.json({ success: true, state: user.state, xpGained });
 });
 
