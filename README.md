@@ -13,4 +13,3 @@ You'll be accompanied by **Barnaby**, a very wholesome and fluffy digital panda 
 * **Panda Wisdom**: Heartwarming, personalized messages powered by Gemini.
 
 ---
-*Remember: You are doing great, and Barnaby believes in you! *
